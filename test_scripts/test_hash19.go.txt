@@ -1,0 +1,18 @@
+package main
+
+import (
+	"crypto/md5"
+	"fmt"
+)
+
+func main() {
+	plaintext := "123456"
+	secret := "66666"
+
+	// 直接使用盐字符串和明文
+	hash := md5.Sum([]byte(secret + plaintext))
+	fmt.Printf("直接使用盐字符串: %x\n", hash)
+
+	// 预期结果
+	fmt.Printf("预期结果: 1211e59e5e514882a6d44e684117b4c8\n")
+}

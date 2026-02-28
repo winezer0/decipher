@@ -1,0 +1,25 @@
+package md5
+
+import (
+	"decipher/internal/algo/types"
+)
+
+type MD5PassMD5SaltAlgo struct{}
+
+func (a *MD5PassMD5SaltAlgo) Name() string { return "md5($pass.md5($salt))" }
+
+func (a *MD5PassMD5SaltAlgo) GetAlgoType() types.AlgoType { return types.AlgoIsStatic }
+
+func (a *MD5PassMD5SaltAlgo) Seal(plaintext, secret string) (string, error) {
+	return md5Hex(plaintext + md5Hex(secret)), nil
+}
+
+func (a *MD5PassMD5SaltAlgo) Recover(token, secret, candidatePlain string) (string, error) {
+	computed, _ := a.Seal(candidatePlain, secret)
+	if computed == token {
+		return candidatePlain, nil
+	}
+	return "", types.ErrVerificationFailed
+}
+
+func (a *MD5PassMD5SaltAlgo) NeedsPrecomputation() bool { return true }

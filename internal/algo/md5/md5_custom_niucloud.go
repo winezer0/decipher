@@ -1,0 +1,25 @@
+package md5
+
+import (
+	"decipher/internal/algo/types"
+)
+
+type MD5DoubleNiuCloudAlgo struct{}
+
+func (a *MD5DoubleNiuCloudAlgo) Name() string { return "md5(md5($pass).NiuCloud)" }
+
+func (a *MD5DoubleNiuCloudAlgo) GetAlgoType() types.AlgoType { return types.AlgoIsStatic }
+
+func (a *MD5DoubleNiuCloudAlgo) Seal(plaintext, secret string) (string, error) {
+	return md5Hex(md5Hex(plaintext) + "NiuCloud"), nil
+}
+
+func (a *MD5DoubleNiuCloudAlgo) Recover(token, secret, candidatePlain string) (string, error) {
+	computed, _ := a.Seal(candidatePlain, "")
+	if computed == token {
+		return candidatePlain, nil
+	}
+	return "", types.ErrVerificationFailed
+}
+
+func (a *MD5DoubleNiuCloudAlgo) NeedsPrecomputation() bool { return true }

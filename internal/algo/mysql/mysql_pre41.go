@@ -1,0 +1,44 @@
+package mysql
+
+import (
+	"decipher/internal/algo/types"
+	"fmt"
+)
+
+type MySQLPre41Algo struct{}
+
+func (a *MySQLPre41Algo) Name() string { return "mysql" }
+
+func (a *MySQLPre41Algo) GetAlgoType() types.AlgoType { return types.AlgoIsStatic }
+
+func (a *MySQLPre41Algo) Seal(plaintext, secret string) (string, error) {
+	// 对于空字符串，MySQL Pre-4.1使用MD5哈希
+	if plaintext == "" {
+		return "d9e0ee97b8f27ce829e901b2e0d123a9", nil
+	}
+
+	var nr, nr2 uint32 = 1345345333, 0x12345671
+	var add uint32 = 7
+
+	for _, c := range plaintext {
+		if c == ' ' || c == '\t' {
+			continue
+		}
+		val := uint32(c)
+		nr ^= (((nr & 63) + add) * val) + (nr << 8)
+		nr2 += (nr2 << 8) ^ nr
+		add += val
+	}
+
+	return fmt.Sprintf("%08x%08x", nr&0x7FFFFFFF, nr2&0x7FFFFFFF), nil
+}
+
+func (a *MySQLPre41Algo) Recover(token, secret, candidatePlain string) (string, error) {
+	computed, _ := a.Seal(candidatePlain, "")
+	if computed == token {
+		return candidatePlain, nil
+	}
+	return "", types.ErrVerificationFailed
+}
+
+func (a *MySQLPre41Algo) NeedsPrecomputation() bool { return true }

@@ -1,0 +1,89 @@
+package main
+
+import (
+	"crypto/md5"
+	"encoding/hex"
+	"fmt"
+	"strconv"
+)
+
+func main() {
+	// 用户提供的示例
+	plaintext := "123456"
+	secret := "66666" // 假设这是一个十进制数字
+	expected := "1211e59e5e514882a6d44e684117b4c8"
+
+	fmt.Printf("Plaintext: %s\n", plaintext)
+	fmt.Printf("Secret: %s\n", secret)
+	fmt.Printf("Expected: %s\n\n", expected)
+
+	// 尝试将salt转换为整数
+	saltInt, err := strconv.ParseInt(secret, 10, 64)
+	if err != nil {
+		fmt.Printf("Error parsing salt: %v\n", err)
+		return
+	}
+	fmt.Printf("Salt as int: %d\n", saltInt)
+
+	// 测试各种可能的组合
+
+	// 组合1: salt作为字符串 + pass
+	test1 := secret + plaintext
+	hash1 := md5.Sum([]byte(test1))
+	result1 := hex.EncodeToString(hash1[:])
+	fmt.Printf("salt (string) + pass: %s\n", test1)
+	fmt.Printf("md5: %s", result1)
+	if result1 == expected {
+		fmt.Println(" ✓")
+	} else {
+		fmt.Println()
+	}
+
+	// 组合2: salt作为整数的字符串表示 + pass
+	test2 := strconv.FormatInt(saltInt, 10) + plaintext
+	hash2 := md5.Sum([]byte(test2))
+	result2 := hex.EncodeToString(hash2[:])
+	fmt.Printf("salt (int string) + pass: %s\n", test2)
+	fmt.Printf("md5: %s", result2)
+	if result2 == expected {
+		fmt.Println(" ✓")
+	} else {
+		fmt.Println()
+	}
+
+	// 组合3: 对salt进行hex编码 + pass
+	saltHex := hex.EncodeToString([]byte(secret))
+	test3 := saltHex + plaintext
+	hash3 := md5.Sum([]byte(test3))
+	result3 := hex.EncodeToString(hash3[:])
+	fmt.Printf("hex(salt) + pass: %s\n", test3)
+	fmt.Printf("md5: %s", result3)
+	if result3 == expected {
+		fmt.Println(" ✓")
+	} else {
+		fmt.Println()
+	}
+
+	// 组合4: 对salt进行base64编码 + pass
+	// 这里省略，因为base64编码的结果不太可能匹配
+
+	// 组合5: 直接使用用户提供的示例值计算
+	// 让我尝试直接计算用户提供的示例
+	// 用户提供的示例: md5($salt.$pass): 1211e59e5e514882a6d44e684117b4c8:66666
+	// 这意味着 salt=66666, pass=123456, 结果=1211e59e5e514882a6d44e684117b4c8
+	// 让我尝试使用不同的编码方式
+
+	// 尝试使用UTF-16编码
+	utf16Salt := []byte{0x36, 0x00, 0x36, 0x00, 0x36, 0x00, 0x36, 0x00, 0x36, 0x00}
+	utf16Pass := []byte{0x31, 0x00, 0x32, 0x00, 0x33, 0x00, 0x34, 0x00, 0x35, 0x00, 0x36, 0x00}
+	utf16Combined := append(utf16Salt, utf16Pass...)
+	hash5 := md5.Sum(utf16Combined)
+	result5 := hex.EncodeToString(hash5[:])
+	fmt.Printf("utf16(salt) + utf16(pass): %v\n", utf16Combined)
+	fmt.Printf("md5: %s", result5)
+	if result5 == expected {
+		fmt.Println(" ✓")
+	} else {
+		fmt.Println()
+	}
+}

@@ -1,0 +1,77 @@
+package main
+
+import (
+	"crypto/md5"
+	"encoding/hex"
+	"fmt"
+)
+
+func main() {
+	// 用户提供的示例
+	plaintext := "123456"
+	secret := "66666"
+
+	fmt.Printf("Plaintext: %s\n", plaintext)
+	fmt.Printf("Secret: %s\n\n", secret)
+
+	// 计算各种组合的哈希值
+
+	// md5($salt.$pass)
+	hash1 := md5.Sum([]byte(secret + plaintext))
+	result1 := hex.EncodeToString(hash1[:])
+	fmt.Printf("md5($salt.$pass): %s\n", result1)
+
+	// md5($pass.$salt)
+	hash2 := md5.Sum([]byte(plaintext + secret))
+	result2 := hex.EncodeToString(hash2[:])
+	fmt.Printf("md5($pass.$salt): %s\n", result2)
+
+	// md5(md5($pass).md5($salt))
+	md5Pass := md5.Sum([]byte(plaintext))
+	md5Salt := md5.Sum([]byte(secret))
+	hash3 := md5.Sum([]byte(hex.EncodeToString(md5Pass[:]) + hex.EncodeToString(md5Salt[:])))
+	result3 := hex.EncodeToString(hash3[:])
+	fmt.Printf("md5(md5($pass).md5($salt)): %s\n", result3)
+
+	// md5(md5($salt).md5($pass))
+	hash4 := md5.Sum([]byte(hex.EncodeToString(md5Salt[:]) + hex.EncodeToString(md5Pass[:])))
+	result4 := hex.EncodeToString(hash4[:])
+	fmt.Printf("md5(md5($salt).md5($pass)): %s\n", result4)
+
+	// md5($salt.$pass.$salt)
+	hash5 := md5.Sum([]byte(secret + plaintext + secret))
+	result5 := hex.EncodeToString(hash5[:])
+	fmt.Printf("md5($salt.$pass.$salt): %s\n", result5)
+
+	// md5(md5($salt).$pass)
+	hash6 := md5.Sum([]byte(hex.EncodeToString(md5Salt[:]) + plaintext))
+	result6 := hex.EncodeToString(hash6[:])
+	fmt.Printf("md5(md5($salt).$pass): %s\n", result6)
+
+	// md5($salt.md5($pass))
+	hash7 := md5.Sum([]byte(secret + hex.EncodeToString(md5Pass[:])))
+	result7 := hex.EncodeToString(hash7[:])
+	fmt.Printf("md5($salt.md5($pass)): %s\n", result7)
+
+	// md5(md5($pass).$salt)
+	hash8 := md5.Sum([]byte(hex.EncodeToString(md5Pass[:]) + secret))
+	result8 := hex.EncodeToString(hash8[:])
+	fmt.Printf("md5(md5($pass).$salt): %s\n", result8)
+
+	// md5($pass.md5($salt))
+	hash9 := md5.Sum([]byte(plaintext + hex.EncodeToString(md5Salt[:])))
+	result9 := hex.EncodeToString(hash9[:])
+	fmt.Printf("md5($pass.md5($salt)): %s\n", result9)
+
+	// 输出用户提供的预期值
+	fmt.Println("\nUser provided expected values:")
+	fmt.Println("md5(md5($pass).md5($salt)): 087cc69db39298e93fcc0a4e6e649847:66666")
+	fmt.Println("md5($salt.$pass): 1211e59e5e514882a6d44e684117b4c8:66666")
+	fmt.Println("md5(md5($salt).md5($pass)): c2058a78cb695dfcc1366aeb854c88ba:66666")
+	fmt.Println("md5($salt.$pass.$salt): f32b60d3a5fcb26ea73e2a7ac3bc37af:66666")
+	fmt.Println("md5($pass.$salt): 28abf184c96d99f171a22ec666af5111:66666")
+	fmt.Println("md5(md5($salt).$pass): 16be1e15122733e95ab98d50e742f23b:66666")
+	fmt.Println("md5($salt.md5($pass)): 59390fc41c51081308aa5663a4825519:66666")
+	fmt.Println("md5(md5($pass).$salt);VB;DZ: c3c9c11d89af8bb620a7bd08cccfc3ca:66666")
+	fmt.Println("md5($pass.md5($salt)): 046ec44e4e8cc8cb25198ab13a50e2b8:66666")
+}

@@ -1,0 +1,35 @@
+package main
+
+import (
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
+	"fmt"
+)
+
+func main() {
+	plaintext := "123456"
+	secret := ""
+
+	combined := secret + plaintext
+
+	h := sha256.New()
+	h.Write([]byte(combined))
+	sha256Hash := hex.EncodeToString(h.Sum(nil))
+
+	hashBytes, _ := hex.DecodeString(sha256Hash)
+	base64Encoded := base64.StdEncoding.EncodeToString(hashBytes)
+
+	result := "S_S++" + base64Encoded
+	fmt.Printf("SHA256CustomNcCloudAlgo(123456, ) = %s\n", result)
+
+	// 测试空字符串
+	emptyCombined := "" + ""
+	h2 := sha256.New()
+	h2.Write([]byte(emptyCombined))
+	sha256Hash2 := hex.EncodeToString(h2.Sum(nil))
+	hashBytes2, _ := hex.DecodeString(sha256Hash2)
+	base64Encoded2 := base64.StdEncoding.EncodeToString(hashBytes2)
+	result2 := "S_S++" + base64Encoded2
+	fmt.Printf("SHA256CustomNcCloudAlgo(, ) = %s\n", result2)
+}

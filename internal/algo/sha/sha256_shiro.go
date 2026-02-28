@@ -1,0 +1,25 @@
+package sha
+
+import (
+	"decipher/internal/algo/types"
+)
+
+type SHA256ShiroAlgo struct{}
+
+func (a *SHA256ShiroAlgo) Name() string { return "sha256_shiro" }
+
+func (a *SHA256ShiroAlgo) GetAlgoType() types.AlgoType { return types.AlgoIsStatic }
+
+func (a *SHA256ShiroAlgo) Seal(plaintext, secret string) (string, error) {
+	return sha256Hex(plaintext + secret), nil
+}
+
+func (a *SHA256ShiroAlgo) Recover(token, secret, candidatePlain string) (string, error) {
+	computed, _ := a.Seal(candidatePlain, secret)
+	if computed == token {
+		return candidatePlain, nil
+	}
+	return "", types.ErrVerificationFailed
+}
+
+func (a *SHA256ShiroAlgo) NeedsPrecomputation() bool { return true }

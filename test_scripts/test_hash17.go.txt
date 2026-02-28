@@ -1,0 +1,49 @@
+package main
+
+import (
+	"crypto/md5"
+	"encoding/hex"
+	"fmt"
+)
+
+func main() {
+	plaintext := "123456"
+	secret := "66666"
+
+	// 方法1：直接使用盐和明文
+	hash1 := md5.Sum([]byte(secret + plaintext))
+	fmt.Printf("方法1 (直接使用): %x\n", hash1)
+
+	// 方法2：对盐进行HEX编码
+	encodedSalt := hex.EncodeToString([]byte(secret))
+	hash2 := md5.Sum([]byte(encodedSalt + plaintext))
+	fmt.Printf("方法2 (盐HEX编码): %x\n", hash2)
+
+	// 方法3：对盐进行HEX解码（处理奇数长度）
+	var decodedSalt []byte
+	var err error
+	if len(secret)%2 != 0 {
+		decodedSalt, err = hex.DecodeString("0" + secret)
+	} else {
+		decodedSalt, err = hex.DecodeString(secret)
+	}
+	if err != nil {
+		fmt.Println("解码错误:", err)
+	} else {
+		hash3 := md5.Sum([]byte(string(decodedSalt) + plaintext))
+		fmt.Printf("方法3 (盐HEX解码): %x\n", hash3)
+	}
+
+	// 方法4：对明文和盐都进行HEX编码
+	encodedPlaintext := hex.EncodeToString([]byte(plaintext))
+	encodedSalt2 := hex.EncodeToString([]byte(secret))
+	hash4 := md5.Sum([]byte(encodedSalt2 + encodedPlaintext))
+	fmt.Printf("方法4 (明文和盐都HEX编码): %x\n", hash4)
+
+	// 方法5：特殊处理，将66666解码为ff
+	hash5 := md5.Sum([]byte("\xff" + plaintext))
+	fmt.Printf("方法5 (盐解码为ff): %x\n", hash5)
+
+	// 预期结果
+	fmt.Printf("预期结果: 1211e59e5e514882a6d44e684117b4c8\n")
+}
