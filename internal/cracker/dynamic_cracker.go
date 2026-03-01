@@ -19,14 +19,14 @@ import (
 	"decipher/internal/embeds"
 )
 
-func (e *Engine) RunDynamicCrack(targets []Target, dynamicDicts []string, algorithms []string) []CrackerResult {
+func (e *Engine) RunDynamicCrack(targets []Target, dynamicDicts []string, algorithms []algo.Algorithm) []CrackerResult {
 	var allResults []CrackerResult
 
 	if len(targets) == 0 {
 		return allResults
 	}
 
-	dynamicAlgos := algo.GetDynamicAlgorithmsByNames(algorithms)
+	dynamicAlgos := algo.GetDynamicAlgorithms(algorithms)
 	if len(dynamicAlgos) == 0 {
 		logging.Warn("No dynamic algorithms available for cracking.")
 		return allResults
@@ -43,9 +43,9 @@ func (e *Engine) RunDynamicCrack(targets []Target, dynamicDicts []string, algori
 	logging.Infof("Using %d dictionary source(s)", len(dictSources))
 
 	failedTargets := make(map[string]Target)
-	hashCacheDir := ".hashcache"
-	if err := os.MkdirAll(hashCacheDir, 0755); err != nil {
-		logging.Errorf("Failed to create hashcache dir: %v", err)
+	runCacheDir := ".runcache"
+	if err := os.MkdirAll(runCacheDir, 0755); err != nil {
+		logging.Errorf("Failed to create runcache dir: %v", err)
 	}
 
 	for _, target := range targets {
@@ -53,7 +53,7 @@ func (e *Engine) RunDynamicCrack(targets []Target, dynamicDicts []string, algori
 		hashSum := md5.Sum([]byte(target.Hash))
 		hashHex := hex.EncodeToString(hashSum[:])
 		cacheFileName := hashHex[:8] + ".dynamic.cache"
-		cachePath := filepath.Join(hashCacheDir, cacheFileName)
+		cachePath := filepath.Join(runCacheDir, cacheFileName)
 
 		if content, err := os.ReadFile(cachePath); err == nil {
 			plaintext := strings.TrimSpace(string(content))
@@ -121,7 +121,7 @@ func (e *Engine) RunDynamicCrack(targets []Target, dynamicDicts []string, algori
 				hashSum := md5.Sum([]byte(res.Hash))
 				hashHex := hex.EncodeToString(hashSum[:])
 				cacheFileName := hashHex[:8] + ".dynamic.cache"
-				cachePath := filepath.Join(hashCacheDir, cacheFileName)
+				cachePath := filepath.Join(runCacheDir, cacheFileName)
 				if err := os.WriteFile(cachePath, []byte(res.Plaintext), 0644); err != nil {
 					logging.Errorf("Failed to write cache for %s: %v", res.Hash, err)
 				}

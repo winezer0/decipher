@@ -2,38 +2,27 @@ package cracker
 
 import (
 	"decipher/internal/algo"
-	"github.com/winezer0/xutils/logging"
-	"github.com/winezer0/xutils/utils"
 	"sync"
 	"time"
+
+	"github.com/winezer0/xutils/logging"
+	"github.com/winezer0/xutils/utils"
 )
 
-// RunEncryptionCrack 使用加密/编码算法对密文进行解密
+// RunDecryptCrack 使用加密/编码算法对密文进行解密
 // targets: 待解密的目标列表
 // secrets: 密钥列表（可以是字典文件或直接密钥）
 // algorithms: 加密算法名称列表
 // workers: 并发工作数
-func RunEncryptionCrack(targets []Target, secrets []string, algorithms []string, workers int) []CrackerResult {
+func (e *Engine) RunDecryptCrack(targets []Target, secrets []string, algorithms []algo.Algorithm) []CrackerResult {
+	workers := e.workers
 	var allResults []CrackerResult
-
 	if len(targets) == 0 {
 		return allResults
 	}
 
 	// 获取加密算法实例
-	encryptAlgos := algo.GetEncryptAlgorithms()
-	if len(algorithms) > 0 {
-		var filteredAlgos []algo.Algorithm
-		for _, alg := range encryptAlgos {
-			for _, name := range algorithms {
-				if alg.Name() == name {
-					filteredAlgos = append(filteredAlgos, alg)
-					break
-				}
-			}
-		}
-		encryptAlgos = filteredAlgos
-	}
+	encryptAlgos := algo.GetEncryptAlgorithms(algorithms)
 
 	if len(encryptAlgos) == 0 {
 		logging.Warn("No encryption algorithms available for cracking.")
@@ -61,10 +50,6 @@ func RunEncryptionCrack(targets []Target, secrets []string, algorithms []string,
 	if len(secretList) == 0 {
 		// 如果没有提供密钥，尝试直接解密（对于不需要密钥的编码如 Base64）
 		secretList = append(secretList, "")
-	}
-
-	if workers <= 0 {
-		workers = 1
 	}
 
 	startTime := time.Now()

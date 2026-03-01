@@ -6,16 +6,14 @@ import (
 	"sync"
 )
 
-// RunEncryption 对文本和盐值进行加密，并返回加密结果列表
+// RunEncrypt 对文本和盐值进行加密，并返回加密结果列表
 // 输出格式: Algorithm:hash:salt:plaintext
-func RunEncryption(texts []Target, salts []Target, algos []algo.Algorithm, workers int) []string {
+func (e *Engine) RunEncrypt(texts []Target, salts []Target, algos []algo.Algorithm) []string {
+	workers := e.workers
+
 	// If no salts, use empty salt
 	if len(salts) == 0 {
 		salts = append(salts, Target{Hash: ""}) // Hash field used as content holder for salt
-	}
-
-	if workers <= 0 {
-		workers = 1
 	}
 
 	type job struct {

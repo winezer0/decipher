@@ -1,6 +1,7 @@
 package cracker
 
 import (
+	"decipher/internal/algo"
 	"os"
 	"path/filepath"
 	"testing"
@@ -9,7 +10,7 @@ import (
 func TestRunLocalCrack(t *testing.T) {
 	t.Run("EmptyTargets", func(t *testing.T) {
 		engine := NewEngine(0, "")
-		results := engine.RunLocalCrack(nil, "", nil)
+		results := engine.RunLocalCrack(nil, nil)
 		if len(results) != 0 {
 			t.Errorf("Expected 0 results for empty targets, got %d", len(results))
 		}
@@ -18,9 +19,7 @@ func TestRunLocalCrack(t *testing.T) {
 	t.Run("EmptyCacheDir", func(t *testing.T) {
 		engine := NewEngine(0, "")
 		targets := []Target{{Hash: "testhash", Salt: ""}}
-		tempDir := t.TempDir()
-
-		results := engine.RunLocalCrack(targets, tempDir, nil)
+		results := engine.RunLocalCrack(targets, nil)
 		if len(results) != 0 {
 			t.Errorf("Expected 0 results for empty cache dir, got %d", len(results))
 		}
@@ -30,7 +29,7 @@ func TestRunLocalCrack(t *testing.T) {
 		engine := NewEngine(0, "")
 		targets := []Target{{Hash: "testhash", Salt: ""}}
 
-		results := engine.RunLocalCrack(targets, "/nonexistent/path", nil)
+		results := engine.RunLocalCrack(targets, nil)
 		if len(results) != 0 {
 			t.Errorf("Expected 0 results for non-existent cache dir, got %d", len(results))
 		}
@@ -48,7 +47,8 @@ func TestRunLocalCrack(t *testing.T) {
 		engine := NewEngine(0, "")
 		targets := []Target{{Hash: "e10adc3949ba59abbe56e057f20f883e", Salt: ""}}
 
-		results := engine.RunLocalCrack(targets, tempDir, []string{"md5"})
+		engine.CacheDir = tempDir
+		results := engine.RunLocalCrack(targets, algo.GetAlgorithmsByKeys([]string{"md5"}))
 
 		if len(results) != 1 {
 			t.Errorf("Expected 1 result, got %d", len(results))
@@ -82,7 +82,8 @@ func TestRunLocalCrack(t *testing.T) {
 			{Hash: "hash2", Salt: ""},
 		}
 
-		results := engine.RunLocalCrack(targets, tempDir, []string{"md5"})
+		engine.CacheDir = tempDir
+		results := engine.RunLocalCrack(targets, algo.GetAlgorithmsByKeys([]string{"md5"}))
 
 		if len(results) != 1 {
 			t.Errorf("Expected 1 result (md5 only), got %d", len(results))
@@ -104,7 +105,7 @@ func TestRunLocalCrack(t *testing.T) {
 		engine := NewEngine(0, tempDir)
 		targets := []Target{{Hash: "testhash", Salt: ""}}
 
-		results := engine.RunLocalCrack(targets, "", nil)
+		results := engine.RunLocalCrack(targets, nil)
 
 		if len(results) != 1 {
 			t.Errorf("Expected 1 result using engine cacheDir, got %d", len(results))
@@ -123,7 +124,8 @@ func TestRunLocalCrack(t *testing.T) {
 		engine := NewEngine(0, "")
 
 		targets := []Target{{Hash: "E10ADC3949BA59ABBE56E057F20F883E", Salt: ""}}
-		results := engine.RunLocalCrack(targets, tempDir, nil)
+		engine.CacheDir = tempDir
+		results := engine.RunLocalCrack(targets, nil)
 
 		if len(results) != 1 {
 			t.Errorf("Expected 1 result with normalized hash, got %d", len(results))
@@ -142,7 +144,8 @@ func TestRunLocalCrack(t *testing.T) {
 		engine := NewEngine(0, "")
 
 		targets := []Target{{Hash: "E10A-DC39-49BA-59AB-BE56-E057-F20F-883E", Salt: ""}}
-		results := engine.RunLocalCrack(targets, tempDir, nil)
+		engine.CacheDir = tempDir
+		results := engine.RunLocalCrack(targets, nil)
 
 		if len(results) != 1 {
 			t.Errorf("Expected 1 result with dash-separated hash, got %d", len(results))
@@ -168,7 +171,8 @@ func TestRunLocalCrack(t *testing.T) {
 			{Hash: "hash2", Salt: ""},
 		}
 
-		results := engine.RunLocalCrack(targets, tempDir, nil)
+		engine.CacheDir = tempDir
+		results := engine.RunLocalCrack(targets, nil)
 
 		if len(results) != 2 {
 			t.Errorf("Expected 2 results from 2 cache files, got %d", len(results))
@@ -187,7 +191,8 @@ func TestRunLocalCrack(t *testing.T) {
 		engine := NewEngine(0, "")
 		targets := []Target{{Hash: "hash1", Salt: ""}}
 
-		results := engine.RunLocalCrack(targets, tempDir, nil)
+		engine.CacheDir = tempDir
+		results := engine.RunLocalCrack(targets, nil)
 
 		if len(results) != 1 {
 			t.Errorf("Expected 1 result (duplicates removed), got %d", len(results))

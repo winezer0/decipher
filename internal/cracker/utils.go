@@ -1,6 +1,8 @@
 package cracker
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/winezer0/xutils/logging"
@@ -39,4 +41,53 @@ func ParseStringsToTargets(inputs []string) []Target {
 // HashStringFormat 标准化hash计算结果
 func HashStringFormat(line string) string {
 	return strings.ReplaceAll(strings.ToLower(line), "-", "")
+}
+
+func parseSalts(addSalts []string) ([]string, string) {
+	var salts []string
+	var saltSigParts []string
+
+	if len(addSalts) > 0 {
+		for _, s := range addSalts {
+			if info, err := os.Stat(s); err == nil && !info.IsDir() {
+				absPath, _ := filepath.Abs(s)
+				saltSigParts = append(saltSigParts, "File:"+absPath)
+				lines, err := utils.LoadPathOrString(s)
+				if err == nil {
+					salts = append(salts, lines...)
+				}
+			} else {
+				saltSigParts = append(saltSigParts, "Raw:"+s)
+				lines, err := utils.LoadPathOrString(s)
+				if err == nil {
+					salts = append(salts, lines...)
+				}
+			}
+		}
+	}
+	if len(salts) == 0 {
+		salts = []string{""}
+		saltSigParts = append(saltSigParts, "None")
+	}
+	return salts, strings.Join(saltSigParts, ",")
+}
+
+func DeduplicateCache(cacheDir string) {
+	entries, err := os.ReadDir(cacheDir)
+	if err != nil {
+		logging.Errorf("Failed to read cache directory: %v", err)
+		return
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".cache") {
+			continue
+		}
+		path := filepath.Join(cacheDir, entry.Name())
+		logging.Infof("Deduplicating %s...", entry.Name())
+		if err := utils.DeduplicateFile(path); err != nil {
+			logging.Errorf("Failed to deduplicate %s: %v", entry.Name(), err)
+		}
+	}
+	logging.Info("Cache deduplication completed.")
 }

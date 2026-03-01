@@ -15,8 +15,8 @@ import (
 
 const (
 	AppName      = "decipher"
-	AppVersion   = "0.0.1"
-	BuildDate    = "2026-02-28"
+	AppVersion   = "0.0.2"
+	BuildDate    = "2026-03-01"
 	AppShortDesc = "common hash fast cracker"
 	AppLongDesc  = "common hash fast cracker"
 )
@@ -43,7 +43,7 @@ type Options struct {
 	DeCache   bool `short:"D" long:"dec" description:"Deduplicate all cache files"`
 	Version   bool `short:"v" long:"version" description:"display the program version and exit"`
 
-	DataDir string `long:"data-dir" description:"Dir for store hash db files" default:".decipher"`
+	DataDir string `long:"data-dir" description:"Dir for store hash db files" default:"~/.decipher"`
 
 	LogLevel      string `long:"ll" description:"Log level (debug, info, warn, error)" default:"info"`
 	LogFile       string `long:"lf" description:"Log file path"`
@@ -109,7 +109,7 @@ func InitOptionsArgs(minimumParams int) (*Options, *flags.Parser) {
 		if err := os.RemoveAll(opts.DataDir); err != nil {
 			logging.Errorf(" remove cache dir %s error: %v", opts.DataDir, err)
 		}
-		// Also clean up hashcache directory for dynamic cracking
+		// Also clean up runcache directory for dynamic cracking
 		cacheDir := ".decipher.cache"
 		logging.Infof("cleaning up dynamic hash cache dir : %s", cacheDir)
 		if err := os.RemoveAll(cacheDir); err != nil {

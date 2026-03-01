@@ -26,7 +26,7 @@ func TestCrackByPreDB(t *testing.T) {
 
 		engine := NewEngine(0, "")
 		go func() {
-			engine.crackByPreDB(ctx, targets, reader, results, "mock", "static")
+			engine.loacalPreDBCrack(ctx, targets, reader, results, "mock", "static")
 			close(results)
 		}()
 
@@ -53,7 +53,7 @@ func TestCrackByPreDB(t *testing.T) {
 
 		engine := NewEngine(0, "")
 		go func() {
-			engine.crackByPreDB(ctx, targets, reader, results, "mock", "static")
+			engine.loacalPreDBCrack(ctx, targets, reader, results, "mock", "static")
 			close(results)
 		}()
 
@@ -76,7 +76,7 @@ func TestCrackByPreDB(t *testing.T) {
 		cancel()
 
 		engine := NewEngine(0, "")
-		engine.crackByPreDB(ctx, targets, reader, results, "mock", "static")
+		engine.loacalPreDBCrack(ctx, targets, reader, results, "mock", "static")
 	})
 
 	t.Run("HashWithSalt", func(t *testing.T) {
@@ -90,7 +90,7 @@ func TestCrackByPreDB(t *testing.T) {
 
 		engine := NewEngine(0, "")
 		go func() {
-			engine.crackByPreDB(ctx, targets, reader, results, "mock", "static")
+			engine.loacalPreDBCrack(ctx, targets, reader, results, "mock", "static")
 			close(results)
 		}()
 
@@ -118,7 +118,7 @@ func TestCrackByPreDB(t *testing.T) {
 
 		engine := NewEngine(0, "")
 		go func() {
-			engine.crackByPreDB(ctx, targets, reader, results, "mock", "static")
+			engine.loacalPreDBCrack(ctx, targets, reader, results, "mock", "static")
 			close(results)
 		}()
 
@@ -133,10 +133,8 @@ func TestCrackByPreDB(t *testing.T) {
 }
 
 func TestParseSalts(t *testing.T) {
-	engine := NewEngine(0, "")
-
 	t.Run("EmptySalts", func(t *testing.T) {
-		salts, sig := engine.parseSalts(nil)
+		salts, sig := parseSalts(nil)
 		if len(salts) != 1 || salts[0] != "" {
 			t.Errorf("Expected empty salt, got %v", salts)
 		}
@@ -146,7 +144,7 @@ func TestParseSalts(t *testing.T) {
 	})
 
 	t.Run("RawSalt", func(t *testing.T) {
-		salts, sig := engine.parseSalts([]string{"rawsalt"})
+		salts, sig := parseSalts([]string{"rawsalt"})
 		if len(salts) != 1 || salts[0] != "rawsalt" {
 			t.Errorf("Expected ['rawsalt'], got %v", salts)
 		}
@@ -167,7 +165,7 @@ func TestParseSalts(t *testing.T) {
 		}
 		tempFile.Close()
 
-		salts, _ := engine.parseSalts([]string{tempFile.Name()})
+		salts, _ := parseSalts([]string{tempFile.Name()})
 		if len(salts) != 2 {
 			t.Errorf("Expected 2 salts, got %d", len(salts))
 		}
@@ -175,10 +173,8 @@ func TestParseSalts(t *testing.T) {
 }
 
 func TestBuildDictTasks(t *testing.T) {
-	engine := NewEngine(0, "")
-
 	t.Run("NoTasksDefaultsToBuiltin", func(t *testing.T) {
-		tasks := engine.buildDictTasks(nil)
+		tasks := buildDictTasks(nil)
 		if len(tasks) != 1 {
 			t.Errorf("Expected 1 task (Builtin), got %d", len(tasks))
 		}
@@ -195,7 +191,7 @@ func TestBuildDictTasks(t *testing.T) {
 		defer os.Remove(tempFile.Name())
 		tempFile.Close()
 
-		tasks := engine.buildDictTasks([]string{tempFile.Name()})
+		tasks := buildDictTasks([]string{tempFile.Name()})
 		if len(tasks) != 1 {
 			t.Errorf("Expected 1 task, got %d", len(tasks))
 		}
@@ -235,14 +231,13 @@ func TestDeduplicateCache(t *testing.T) {
 
 func TestGenCacheDBConcurrency(t *testing.T) {
 	tempDir := t.TempDir()
-	engine := NewEngine(2, tempDir)
 
 	content := "password\n123456\nadmin\n"
 	scanner := bufio.NewScanner(strings.NewReader(content))
 
 	mockAlgos := []algo.Algorithm{&mockAlgo{name: "test"}}
 
-	engine.genCacheDBConcurrency(scanner, mockAlgos, []string{""}, 2, tempDir)
+	genCacheDBConcurrency(scanner, mockAlgos, []string{""}, 2, tempDir)
 
 	cacheFile := filepath.Join(tempDir, "cache_test.cache")
 	if _, err := os.Stat(cacheFile); os.IsNotExist(err) {

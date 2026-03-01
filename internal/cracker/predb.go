@@ -3,23 +3,19 @@ package cracker
 import (
 	"bufio"
 	"context"
-	"decipher/internal/myutil"
+	"decipher/internal/algo/types"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
-	"time"
-
-	"github.com/winezer0/xutils/logging"
-	"github.com/winezer0/xutils/utils"
 
 	"decipher/internal/algo"
-	"decipher/internal/embeds"
+
+	"github.com/winezer0/xutils/logging"
 )
 
-func (e *Engine) crackByPreDB(ctx context.Context, targets []Target, dict io.Reader, results chan<- CrackerResult, algoName string, algoType string) {
+func (e *Engine) loacalPreDBCrack(ctx context.Context, targets []Target, dict io.Reader, results chan<- CrackerResult, algoName string, algoType types.AlgoType) {
 	targetMap := make(map[string][]Target)
 	for _, t := range targets {
 		hash := HashStringFormat(t.Hash)
@@ -48,7 +44,7 @@ func (e *Engine) crackByPreDB(ctx context.Context, targets []Target, dict io.Rea
 				case results <- CrackerResult{
 					Hash:      t.Hash,
 					Algorithm: algoName,
-					AlgoType:  algoType,
+					AlgoType:  string(algoType),
 					Plaintext: plain,
 					Salt:      salt,
 				}:
@@ -58,70 +54,31 @@ func (e *Engine) crackByPreDB(ctx context.Context, targets []Target, dict io.Rea
 	}
 
 	if err := scanner.Err(); err != nil {
-		logging.Errorf("Scanner error in crackByPreDB: %v", err)
+		logging.Errorf("Scanner error in loacalPreDBCrack: %v", err)
 	}
 }
 
-func HasCacheFiles(cacheDir string) bool {
-	entries, err := os.ReadDir(cacheDir)
-	if err != nil {
-		return false
-	}
-	for _, e := range entries {
-		if !e.IsDir() && strings.HasSuffix(e.Name(), ".cache") {
-			return true
-		}
-	}
-	return false
-}
-
-func DeduplicateCache(cacheDir string) {
-	entries, err := os.ReadDir(cacheDir)
-	if err != nil {
-		logging.Errorf("Failed to read cache directory: %v", err)
-		return
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".cache") {
-			continue
-		}
-		path := filepath.Join(cacheDir, entry.Name())
-		logging.Infof("Deduplicating %s...", entry.Name())
-		if err := utils.DeduplicateFile(path); err != nil {
-			logging.Errorf("Failed to deduplicate %s: %v", entry.Name(), err)
-		}
-	}
-	logging.Info("Cache deduplication completed.")
-}
-
-func (e *Engine) GenCacheDB(cacheDir string, addDicts []string, addSalts []string, workers int, algorithms []algo.Algorithm) {
+func (e *Engine) GenCacheDB(selectAlgos []algo.Algorithm, addDicts []string, addSalts []string) {
 	logging.Info("Processing Cache Generation...")
-
-	//初始化缓存目录
-	if err := os.MkdirAll(cacheDir, 0755); err != nil {
-		logging.Errorf("Failed to create cache directory %s: %v", cacheDir, err)
-		return
+	// 如果没有指定任何算法列表，使用所有需要预计算的算法
+	if len(selectAlgos) == 0 {
+		selectAlgos = algo.GetAllAlgorithms()
 	}
-
-	// 如果没有指定算法列表，使用所有需要预计算的算法
-	var precomputAlgos []algo.Algorithm
-	if len(algorithms) > 0 {
-		precomputAlgos = algo.FilterNeedsPrecomputAlgorithms(algorithms)
-	} else {
-		precomputAlgos = algo.FilterNeedsPrecomputAlgorithms(algo.GetAllAlgorithms())
-	}
-
-	if len(precomputAlgos) == 0 {
+	// 过滤出运行预计算hash的算法
+	predbAlgos := algo.FilterNeedsPrecomputAlgos(selectAlgos)
+	if len(predbAlgos) == 0 {
 		logging.Warn("No algorithms that need precomputation to generate cache for.")
 		return
 	}
-	// 初始化线程数
-	if workers <= 0 {
-		workers = e.workers
+
+	//初始化缓存目录
+	if err := os.MkdirAll(e.CacheDir, 0755); err != nil {
+		logging.Errorf("Failed to create cache directory %s: %v", e.CacheDir, err)
+		return
 	}
+
 	//过滤已记录生成的dict
-	addedLogPath := filepath.Join(cacheDir, "added.log")
+	addedLogPath := filepath.Join(e.CacheDir, "added.log")
 	processedKeys := make(map[string]bool)
 	if content, err := os.ReadFile(addedLogPath); err == nil {
 		lines := strings.Split(string(content), "\n")
@@ -134,8 +91,8 @@ func (e *Engine) GenCacheDB(cacheDir string, addDicts []string, addSalts []strin
 	}
 
 	//解析salt信息
-	salts, saltSignature := e.parseSalts(addSalts)
-	tasks := e.buildDictTasks(addDicts)
+	salts, saltSignature := parseSalts(addSalts)
+	tasks := buildDictTasks(addDicts)
 	addedLogFile, err := os.OpenFile(addedLogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		logging.Errorf("Failed to open added.log: %v", err)
@@ -157,7 +114,7 @@ func (e *Engine) GenCacheDB(cacheDir string, addDicts []string, addSalts []strin
 			continue
 		}
 
-		e.genCacheDBConcurrency(scanner, precomputAlgos, salts, workers, cacheDir)
+		genCacheDBConcurrency(scanner, predbAlgos, salts, e.workers, e.CacheDir)
 
 		if file != nil {
 			file.Close()
@@ -167,169 +124,4 @@ func (e *Engine) GenCacheDB(cacheDir string, addDicts []string, addSalts []strin
 			logging.Errorf("Failed to write to added.log: %v", err)
 		}
 	}
-}
-
-func (e *Engine) parseSalts(addSalts []string) ([]string, string) {
-	var salts []string
-	var saltSigParts []string
-
-	if len(addSalts) > 0 {
-		for _, s := range addSalts {
-			if info, err := os.Stat(s); err == nil && !info.IsDir() {
-				absPath, _ := filepath.Abs(s)
-				saltSigParts = append(saltSigParts, "File:"+absPath)
-				lines, err := utils.LoadPathOrString(s)
-				if err == nil {
-					salts = append(salts, lines...)
-				}
-			} else {
-				saltSigParts = append(saltSigParts, "Raw:"+s)
-				lines, err := utils.LoadPathOrString(s)
-				if err == nil {
-					salts = append(salts, lines...)
-				}
-			}
-		}
-	}
-	if len(salts) == 0 {
-		salts = []string{""}
-		saltSigParts = append(saltSigParts, "None")
-	}
-	return salts, strings.Join(saltSigParts, ",")
-}
-
-type dictTask struct {
-	Name       string
-	Path       string
-	GetScanner func() (*bufio.Scanner, *os.File, error)
-}
-
-func (e *Engine) buildDictTasks(addDicts []string) []dictTask {
-	var tasks []dictTask
-
-	if len(addDicts) == 0 {
-		tasks = append(tasks, dictTask{
-			Name: "Builtin Dict",
-			Path: "BUILTIN",
-			GetScanner: func() (*bufio.Scanner, *os.File, error) {
-				reader := embeds.GetBuiltinDict()
-				scanner := bufio.NewScanner(reader)
-				buf := make([]byte, 0, DefaultScannerBufferSize)
-				scanner.Buffer(buf, MaxScannerTokenSize)
-				return scanner, nil, nil
-			},
-		})
-	}
-
-	// 如果用户输入的是字符串列表，而不是文件列表字典 需要写入到临时文件中 因为后续pre-db使用的是文件路径
-	addDicts = myutil.ConvertStringsToFiles(addDicts, "temp.dict")
-	for _, d := range addDicts {
-		dPath := d
-		absPath, _ := filepath.Abs(d)
-		tasks = append(tasks, dictTask{
-			Name: fmt.Sprintf("Dict %s", d),
-			Path: absPath,
-			GetScanner: func() (*bufio.Scanner, *os.File, error) {
-				f, err := os.Open(dPath)
-				if err != nil {
-					return nil, nil, err
-				}
-				scanner := bufio.NewScanner(f)
-				buf := make([]byte, 0, DefaultScannerBufferSize)
-				scanner.Buffer(buf, MaxScannerTokenSize)
-				return scanner, f, nil
-			},
-		})
-	}
-
-	return tasks
-}
-
-func (e *Engine) genCacheDBConcurrency(scanner *bufio.Scanner, algos []algo.Algorithm, salts []string, workers int, cacheDir string) {
-	linesChan := make(chan string, workers*2)
-	resultsChan := make(chan string, workers*10)
-
-	var wg sync.WaitGroup
-
-	for i := 0; i < workers; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for line := range linesChan {
-				line = strings.TrimSpace(line)
-				if line == "" {
-					continue
-				}
-				for _, alg := range algos {
-					for _, salt := range salts {
-						token, err := alg.Seal(line, salt)
-						if err != nil {
-							continue
-						}
-						entry := fmt.Sprintf("%s:%s:%s", token, salt, line)
-						resultsChan <- fmt.Sprintf("%s|%s", alg.Name(), entry)
-					}
-				}
-			}
-		}()
-	}
-
-	writerDone := make(chan struct{})
-	go func() {
-		defer close(writerDone)
-		files := make(map[string]*os.File)
-		writers := make(map[string]*bufio.Writer)
-		defer func() {
-			for _, w := range writers {
-				w.Flush()
-			}
-			for _, f := range files {
-				f.Close()
-			}
-		}()
-
-		for res := range resultsChan {
-			parts := strings.SplitN(res, "|", 2)
-			if len(parts) != 2 {
-				continue
-			}
-			algoName := parts[0]
-			entry := parts[1]
-
-			w, ok := writers[algoName]
-			if !ok {
-				fname := filepath.Join(cacheDir, fmt.Sprintf("cache_%s.cache", algoName))
-				f, err := os.OpenFile(fname, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-				if err != nil {
-					logging.Errorf("Failed to open cache file for %s: %v", algoName, err)
-					continue
-				}
-				files[algoName] = f
-				w = bufio.NewWriter(f)
-				writers[algoName] = w
-			}
-			w.WriteString(HashStringFormat(entry) + "\n")
-		}
-	}()
-
-	count := 0
-	startTime := time.Now()
-	for scanner.Scan() {
-		linesChan <- scanner.Text()
-		count++
-		if count%ProgressReportInterval == 0 {
-			logging.Infof("Processed %d lines...", count)
-		}
-	}
-	close(linesChan)
-
-	if err := scanner.Err(); err != nil {
-		logging.Errorf("Scanner error in genCacheDBConcurrency: %v", err)
-	}
-
-	wg.Wait()
-	close(resultsChan)
-	<-writerDone
-
-	logging.Infof("Processed %d lines in %v", count, time.Since(startTime))
 }
