@@ -68,4 +68,4 @@ func (a *MSSQL2015Algo) Recover(token, secret, candidatePlain string) (string, e
 	return "", types.ErrVerificationFailed
 }
 
-func (a *MSSQL2015Algo) NeedsPrecomputation() bool { return true }
+func (a *MSSQL2015Algo) NeedAddToPredb() bool { return true }

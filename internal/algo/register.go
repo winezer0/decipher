@@ -1,7 +1,6 @@
 package algo
 
 import (
-	"decipher/internal/algo/argon2"
 	"decipher/internal/algo/base64"
 	"decipher/internal/algo/bcrypt"
 	"decipher/internal/algo/des"
@@ -9,7 +8,6 @@ import (
 	"decipher/internal/algo/mssql"
 	"decipher/internal/algo/mysql"
 	"decipher/internal/algo/ntlm"
-	"decipher/internal/algo/phpass"
 	"decipher/internal/algo/scrypt"
 	"decipher/internal/algo/sha"
 )
@@ -89,8 +87,7 @@ func GetAllAlgorithms() []Algorithm {
 		// Dynamic Hash Algorithms
 		&bcrypt.BcryptAlgo{},
 		&bcrypt.BcryptMd5Algo{},
-		&argon2.Argon2Algo{},
+		&bcrypt.BcryptPassSaltAlgo{},
 		&scrypt.ScryptAlgo{},
-		&phpass.PHPassAlgo{},
 	}
 }

@@ -6,83 +6,59 @@ import (
 	"github.com/winezer0/xutils/utils"
 )
 
-// FilterNeedsPrecomputAlgos 从给定算法列表中过滤出需要预计算的算法
-func FilterNeedsPrecomputAlgos(algos []Algorithm) []Algorithm {
-	var precomputAlgos []Algorithm
+// FilterNeedAddToPredbAlogs 从给定算法列表中过滤出需要预计算的算法
+func FilterNeedAddToPredbAlogs(algos []Algorithm) []Algorithm {
+	var filter []Algorithm
 	for _, alg := range algos {
-		if alg.NeedsPrecomputation() {
-			precomputAlgos = append(precomputAlgos, alg)
+		if alg.NeedAddToPredb() {
+			filter = append(filter, alg)
 		}
 	}
-	return precomputAlgos
+	return filter
 }
 
-// FilterNotNeedsPrecomputAlgos 从给定算法列表中过滤出不需要预计算的算法
-func FilterNotNeedsPrecomputAlgos(algos []Algorithm) []Algorithm {
-	var notPrecomputAlgos []Algorithm
+// FilterNotNeedAddToPredbAlogs 从给定算法列表中过滤出不需要预计算的算法
+func FilterNotNeedAddToPredbAlogs(algos []Algorithm) []Algorithm {
+	var filter []Algorithm
 	for _, alg := range algos {
-		if !alg.NeedsPrecomputation() {
-			notPrecomputAlgos = append(notPrecomputAlgos, alg)
+		if !alg.NeedAddToPredb() {
+			filter = append(filter, alg)
 		}
 	}
-	return notPrecomputAlgos
+	return filter
 }
 
 // FilterStaticAlgorithms 从给定算法列表中过滤出静态算法
 func FilterStaticAlgorithms(algos []Algorithm) []Algorithm {
-	var staticAlgos []Algorithm
+	var filter []Algorithm
 	for _, alg := range algos {
 		if alg.GetAlgoType() == types.AlgoIsStatic {
-			staticAlgos = append(staticAlgos, alg)
+			filter = append(filter, alg)
 		}
 	}
-	return staticAlgos
+	return filter
 }
 
 // FilterDynamicAlgorithms 从给定算法列表中过滤出动态算法
 func FilterDynamicAlgorithms(algos []Algorithm) []Algorithm {
-	var dynamicAlgos []Algorithm
+	var filter []Algorithm
 	for _, alg := range algos {
 		if alg.GetAlgoType() == types.AlgoIsDynamic {
-			dynamicAlgos = append(dynamicAlgos, alg)
+			filter = append(filter, alg)
 		}
 	}
-	return dynamicAlgos
+	return filter
 }
 
 // FilterEncryptAlgorithms 从给定算法列表中过滤出加密算法
 func FilterEncryptAlgorithms(algos []Algorithm) []Algorithm {
-	var encryptAlgos []Algorithm
+	var filter []Algorithm
 	for _, alg := range algos {
 		if alg.GetAlgoType() == types.AlgoIsEncrypt {
-			encryptAlgos = append(encryptAlgos, alg)
+			filter = append(filter, alg)
 		}
 	}
-	return encryptAlgos
-}
-
-// GetStaticAlgorithms 返回所有静态哈希算法实例
-func GetStaticAlgorithms(algos []Algorithm) []Algorithm {
-	if len(algos) == 0 {
-		algos = GetAllAlgorithms()
-	}
-	return FilterStaticAlgorithms(algos)
-}
-
-// GetDynamicAlgorithms 返回所有动态哈希算法实例
-func GetDynamicAlgorithms(algos []Algorithm) []Algorithm {
-	if len(algos) == 0 {
-		algos = GetAllAlgorithms()
-	}
-	return FilterDynamicAlgorithms(algos)
-}
-
-// GetEncryptAlgorithms 返回所有加密算法实例
-func GetEncryptAlgorithms(algos []Algorithm) []Algorithm {
-	if len(algos) == 0 {
-		algos = GetAllAlgorithms()
-	}
-	return FilterEncryptAlgorithms(algos)
+	return filter
 }
 
 // GetAlgorithmByName 根据名称获取算法

@@ -17,7 +17,7 @@ func (a *MD5Algo) GetAlgoType() types.AlgoType {
 	return types.AlgoIsStatic
 }
 
-func (a *MD5Algo) NeedsPrecomputation() bool {
+func (a *MD5Algo) NeedAddToPredb() bool {
 	return true
 }
 

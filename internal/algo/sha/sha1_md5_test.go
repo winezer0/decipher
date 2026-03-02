@@ -20,10 +20,10 @@ func TestSHA1MD5Algo_GetAlgoType(t *testing.T) {
 	}
 }
 
-func TestSHA1MD5Algo_NeedsPrecomputation(t *testing.T) {
+func TestSHA1MD5Algo_NeedAddToPredb(t *testing.T) {
 	algo := &SHA1MD5Algo{}
-	if got := algo.NeedsPrecomputation(); !got {
-		t.Errorf("SHA1MD5Algo.NeedsPrecomputation() = %v, want true", got)
+	if got := algo.NeedAddToPredb(); !got {
+		t.Errorf("SHA1MD5Algo.NeedAddToPredb() = %v, want true", got)
 	}
 }
 

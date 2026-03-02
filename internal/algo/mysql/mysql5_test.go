@@ -20,10 +20,10 @@ func TestMySQL5Algo_GetAlgoType(t *testing.T) {
 	}
 }
 
-func TestMySQL5Algo_NeedsPrecomputation(t *testing.T) {
+func TestMySQL5Algo_NeedAddToPredb(t *testing.T) {
 	algo := &MySQL5Algo{}
-	if got := algo.NeedsPrecomputation(); !got {
-		t.Errorf("MySQL5Algo.NeedsPrecomputation() = %v, want true", got)
+	if got := algo.NeedAddToPredb(); !got {
+		t.Errorf("MySQL5Algo.NeedAddToPredb() = %v, want true", got)
 	}
 }
 

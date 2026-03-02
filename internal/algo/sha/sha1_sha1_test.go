@@ -20,10 +20,10 @@ func TestSHA1DoubleAlgo_GetAlgoType(t *testing.T) {
 	}
 }
 
-func TestSHA1DoubleAlgo_NeedsPrecomputation(t *testing.T) {
+func TestSHA1DoubleAlgo_NeedAddToPredb(t *testing.T) {
 	algo := &SHA1DoubleAlgo{}
-	if got := algo.NeedsPrecomputation(); !got {
-		t.Errorf("SHA1DoubleAlgo.NeedsPrecomputation() = %v, want true", got)
+	if got := algo.NeedAddToPredb(); !got {
+		t.Errorf("SHA1DoubleAlgo.NeedAddToPredb() = %v, want true", got)
 	}
 }
 

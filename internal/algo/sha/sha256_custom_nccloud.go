@@ -34,4 +34,4 @@ func (a *SHA256CustomNcCloudAlgo) Recover(token, secret, candidatePlain string) 
 	return "", types.ErrVerificationFailed
 }
 
-func (a *SHA256CustomNcCloudAlgo) NeedsPrecomputation() bool { return true }
+func (a *SHA256CustomNcCloudAlgo) NeedAddToPredb() bool { return true }

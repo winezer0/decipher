@@ -23,7 +23,6 @@ type Algorithm interface {
 	// Recover
 	// 作用：验证哈希 或 解密密文
 	// 逻辑分叉：
-
 	// 参数说明:
 	// - token: 存储的哈希值或密文
 	// - secret:  (Hash的盐值) 或  (Encrypt的密钥)
@@ -36,13 +35,10 @@ type Algorithm interface {
 	//        - 失败: 返回 ("", ErrVerificationFailed)
 	Recover(token, secret, candidatePlain string) (string, error)
 
-	// NeedsPrecomputation
+	// NeedAddToPredb
 	// 作用：判断该算法是否支持/需要预先计算缓存（pre-db）
 	// 返回 true: 告诉系统"可以为我建缓存"（如 md5 这种静态 hash）
 	// 返回 false: 告诉系统"不需要/不适合建缓存"（如 bcrypt 这种动态 hash，或 base64 这种编码）
 	// 注意: 即使返回 false，用户仍可手动指定为 true 启用缓存功能
-	NeedsPrecomputation() bool
-
-
-	
+	NeedAddToPredb() bool
 }

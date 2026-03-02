@@ -13,15 +13,15 @@ func TestRunEncryption(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		texts    []Target
-		salts    []Target
+		texts    []string
+		salts    []string
 		algos    []algo.Algorithm
 		expected []string
 	}{
 		{
 			name:  "Single text, no salt",
-			texts: []Target{{Hash: "hello"}},
-			salts: []Target{},
+			texts: []string{"hello"},
+			salts: []string{},
 			algos: []algo.Algorithm{md5SaltPassAlgo},
 			expected: []string{
 				"md5($salt.$pass):5d41402abc4b2a76b9719d911017c592::hello",
@@ -29,8 +29,8 @@ func TestRunEncryption(t *testing.T) {
 		},
 		{
 			name:  "Single text, single salt",
-			texts: []Target{{Hash: "hello"}},
-			salts: []Target{{Hash: "salt1"}},
+			texts: []string{"hello"},
+			salts: []string{"salt1"},
 			algos: []algo.Algorithm{md5SaltPassAlgo},
 			expected: []string{
 				"md5($salt.$pass):95a2e8514b40b95ef41fb464a6e382ee:salt1:hello",
@@ -38,8 +38,8 @@ func TestRunEncryption(t *testing.T) {
 		},
 		{
 			name:  "Multiple texts, multiple salts",
-			texts: []Target{{Hash: "t1"}, {Hash: "t2"}},
-			salts: []Target{{Hash: "s1"}, {Hash: "s2"}},
+			texts: []string{"t1", "t2"},
+			salts: []string{"s1", "s2"},
 			algos: []algo.Algorithm{md5SaltPassAlgo},
 			expected: []string{
 				"md5($salt.$pass):10df6e5eff60de6558e080133ce7039a:s1:t1",
@@ -50,7 +50,7 @@ func TestRunEncryption(t *testing.T) {
 		},
 	}
 
-	engine := NewEngine(1, "cache_dir")
+	engine := NewEngine(1, "cache_dir", "")
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

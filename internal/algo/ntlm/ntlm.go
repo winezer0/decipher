@@ -35,4 +35,4 @@ func (a *NTLMAlgo) Recover(token, secret, candidatePlain string) (string, error)
 	return "", types.ErrVerificationFailed
 }
 
-func (a *NTLMAlgo) NeedsPrecomputation() bool { return true }
+func (a *NTLMAlgo) NeedAddToPredb() bool { return true }

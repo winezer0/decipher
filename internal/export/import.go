@@ -37,7 +37,7 @@ func LoadSuccessCacheMap(cacheFile string) map[string]cracker.CrackerResult {
 		// CSV Format: hash_salt, clear_text, salt, algo, algo_type
 		if len(record) >= 5 {
 			// hash_salt
-			parts := strings.SplitN(record[0], ":", 2)
+			parts := strings.SplitN(record[0], cracker.ConcatSymbol, 2)
 			hash := strings.TrimSpace(parts[0])
 
 			// plaintext is record[1]

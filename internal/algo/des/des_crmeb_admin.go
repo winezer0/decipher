@@ -89,7 +89,7 @@ func (a *CrmebAdminAlgo) Recover(token, secret, candidatePlain string) (string, 
 	return string(result), nil
 }
 
-func (a *CrmebAdminAlgo) NeedsPrecomputation() bool { return false }
+func (a *CrmebAdminAlgo) NeedAddToPredb() bool { return false }
 
 func (a *CrmebAdminAlgo) prepareKey(secret string) []byte {
 	keyBytes := []byte(secret)

@@ -22,4 +22,4 @@ func (a *SHA1SaltPassAlgo) Recover(token, secret, candidatePlain string) (string
 	return "", types.ErrVerificationFailed
 }
 
-func (a *SHA1SaltPassAlgo) NeedsPrecomputation() bool { return true }
+func (a *SHA1SaltPassAlgo) NeedAddToPredb() bool { return true }

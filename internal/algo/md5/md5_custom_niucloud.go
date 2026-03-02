@@ -22,4 +22,4 @@ func (a *MD5DoubleNiuCloudAlgo) Recover(token, secret, candidatePlain string) (s
 	return "", types.ErrVerificationFailed
 }
 
-func (a *MD5DoubleNiuCloudAlgo) NeedsPrecomputation() bool { return true }
+func (a *MD5DoubleNiuCloudAlgo) NeedAddToPredb() bool { return true }

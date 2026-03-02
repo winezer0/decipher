@@ -2,18 +2,20 @@ package cracker
 
 import (
 	"decipher/internal/algo"
-	"fmt"
+	"strings"
 	"sync"
 )
 
 // RunEncrypt 对文本和盐值进行加密，并返回加密结果列表
 // 输出格式: Algorithm:hash:salt:plaintext
-func (e *Engine) RunEncrypt(texts []Target, salts []Target, algos []algo.Algorithm) []string {
-	workers := e.workers
+func (e *Engine) RunEncrypt(textsDicts []string, secretDicts []string, algos []algo.Algorithm) []string {
+	// 加载文件到列表
+	texts := ParseFilesToStrings(textsDicts, false)
+	secrets := ParseFilesToStrings(secretDicts, false)
 
-	// If no salts, use empty salt
-	if len(salts) == 0 {
-		salts = append(salts, Target{Hash: ""}) // Hash field used as content holder for salt
+	// 如果没有盐，就使用空盐罐。
+	if len(secrets) == 0 {
+		secrets = append(secrets, "") // 哈希字段用作盐值的存储容器
 	}
 
 	type job struct {
@@ -22,12 +24,12 @@ func (e *Engine) RunEncrypt(texts []Target, salts []Target, algos []algo.Algorit
 		alg  algo.Algorithm
 	}
 
-	jobs := make(chan job, workers)
-	resultsChan := make(chan string, workers)
+	jobs := make(chan job, e.workers)
+	resultsChan := make(chan string, e.workers)
 	var wg sync.WaitGroup
 
 	// Start workers
-	for i := 0; i < workers; i++ {
+	for i := 0; i < e.workers; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -37,8 +39,10 @@ func (e *Engine) RunEncrypt(texts []Target, salts []Target, algos []algo.Algorit
 					// 加密失败，跳过此任务
 					continue
 				}
-				// Output format: Algorithm:hash:salt:plaintext
-				resultsChan <- fmt.Sprintf("%s:%s:%s:%s", j.alg.Name(), token, j.salt, j.text)
+				// 输出格式：Algorithm:hash:salt:plaintext
+				element := []string{j.alg.Name(), token, j.salt, j.text}
+				encrypt := strings.Join(element, ConcatSymbol)
+				resultsChan <- encrypt
 			}
 		}()
 	}
@@ -46,12 +50,8 @@ func (e *Engine) RunEncrypt(texts []Target, salts []Target, algos []algo.Algorit
 	// Producer
 	go func() {
 		for _, alg := range algos {
-			for _, textTarget := range texts {
-				text := textTarget.Hash // ParseStringsToTargets puts content in Hash field
-
-				// Cartesian product of texts and salts
-				for _, saltTarget := range salts {
-					salt := saltTarget.Hash // ParseStringsToTargets puts content in Hash field
+			for _, text := range texts {
+				for _, salt := range secrets {
 					jobs <- job{text: text, salt: salt, alg: alg}
 				}
 			}

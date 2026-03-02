@@ -15,7 +15,77 @@ decipher 是一个基于 Go 语言编写的高性能本地哈希解密工具。�
 *   **算法猜测**: 支持通过hash和salt解密从而实现算法猜测。
 *   **结果导出**: 支持将解密结果导出为 CSV 文件。
 
-## 2. 程序运行逻辑与解密原理
+## 2. 算法列表 20260302
+提示: 目前已实现cmd5.com加密列表中的所有加密算法示例
+```
+Available algorithms:
+  1:  base64
+  2:  des_crmeb_admin
+  3:  md5
+  4:  md5_middle
+  5:  md5(md5($pass))
+  6:  md5(md5($pass).NiuCloud)
+  7:  md5(md5(md5($pass)))
+  8:  md5(unicode($pass))
+  9:  base64(md5($pass))
+  10:  md5($pass.$salt)
+  11:  md5($salt.$pass)
+  12:  md5($salt.$pass.$salt)
+  13:  md5($salt.md5($pass))
+  14:  md5(md5($salt).$pass)
+  15:  md5($pass.md5($salt))
+  16:  md5(md5($pass).$salt)
+  17:  md5(md5($salt).md5($pass))
+  18:  md5(md5($pass).md5($salt))
+  19:  md5(sha1($pass))
+  20:  md5(substring(md5($pass),8,16))
+  21:  md5($pass.md5(y.$salt.x).2020)
+  22:  md5_custom_mss
+  23:  md5_custom_nc65
+  24:  md5_custom_gmshop
+  25:  md5_md5_md5_bt_admin
+  26:  md5($pass.$salt)_hex
+  27:  md5($salt.$pass)_hex
+  28:  md5($salt.$pass.$salt)_hex
+  29:  md5($salt.md5($pass))_hex
+  30:  md5(md5($salt).$pass)_hex
+  31:  md5($pass.md5($salt))_hex
+  32:  md5(md5($pass).$salt);VB;DZ_hex
+  33:  md5(md5($salt).md5($pass))_hex
+  34:  md5(md5($pass).md5($salt))_hex
+  35:  sha1
+  36:  sha1($pass.$salt)
+  37:  sha1($salt.$pass)
+  38:  sha1(sha1($pass))
+  39:  sha1(md5($pass))
+  40:  sha256
+  41:  sha256($pass.$salt)
+  42:  sha256($salt.$pass)
+  43:  sha256(md5($pass))
+  44:  sha256_shiro
+  45:  sha256_custom_nccloud
+  46:  sha384
+  47:  sha512
+  48:  sha512($pass.$salt)
+  49:  sha512($salt.$pass)
+  50:  sha1($pass.$salt)_hex
+  51:  sha1($salt.$pass)_hex
+  52:  sha256($pass.$salt)_hex
+  53:  sha256($salt.$pass)_hex
+  54:  sha512($pass.$salt)_hex
+  55:  sha512($salt.$pass)_hex
+  56:  mysql
+  57:  mysql5
+  58:  ntlm
+  59:  MSSQL2015
+  60:  bcrypt
+  61:  bcrypt_md5
+  62:  argon2
+  63:  scrypt
+  64:  phpass
+```
+
+## 3. 程序运行逻辑与解密原理
 
 decipher 的核心原理是**彩虹版碰撞 + 实时hash计算 + 可逆算法解密**。
 
@@ -41,9 +111,14 @@ decipher 的核心原理是**彩虹版碰撞 + 实时hash计算 + 可逆算法�
    *   支持批量加密多个明文和密钥，并可指定多种算法同时计算。
 
 **注意**：算法分为静态算法和动态算法两种类型：
+*   **预计算功能** ：预计算和算法选项目前已经解耦，目前设置为只对常用的算法进行预计算
 *   **静态算法**（如MD5、SHA系列）：可以预计算缓存，解密速度快
 *   **动态算法**（如bcrypt）：无法预计算，只能实时验证，只在静态算法解密失败后执行
-*   **预计算功能** ：预计算和算法选项目前是解耦的，目前设置只对常用的算法进行预计算
+  - 动态破解只在以下情况下执行：
+    1. 预计算算法解密失败后
+    2. 用户明确指定了动态算法（如bcrypt）
+    3. 程序会按顺序尝试预计算算法、动态算法和加解密算法  
+
 
 ### 解密原理图解
 
@@ -108,36 +183,36 @@ decipher 的核心原理是**彩虹版碰撞 + 实时hash计算 + 可逆算法�
 
 ## 4. 使用示例
 
-### 4.1 初始化缓存（首次使用推荐）
+### 1. 初始化缓存（首次使用推荐）
 使用内置字典生成缓存：
 ```bash
 ./decipher -d
 ```
 
-### 4.2 添加自定义字典
+### 2. 添加自定义字典
 将 `my_passwords.txt` 中的密码，并使用salt=666 来进行hash预计算并加入缓存：
 ```bash
 ./decipher -d ./my_passwords.txt -s 666
 ```
 
-### 4.3 单个哈希解密
+### 3. 单个哈希解密
 ```bash
 ./decipher -i e10adc3949ba59abbe56e057f20f883e
 ```
 
-### 4.4 批量解密
+### 4. 批量解密
 从 `hashes.txt` 读取哈希列表进行解密，并将结果保存到 `result.csv`：
 ```bash
 ./decipher -i ./hashes.txt -o ./result.csv
 ```
 
-### 4.5 指定算法解密 当前使用关键字模糊匹配
+### 5. 指定算法解密 当前使用关键字模糊匹配
 只使用 MD5 算法进行解密：
 ```bash
 ./decipher -i e10adc3949ba59abbe56e057f20f883e -a md5
 ```
 
-### 4.6 使用动态算法解密
+### 6. 使用动态算法解密
 使用 bcrypt 动态算法进行解密（注意：动态算法只在静态算法解密失败后执行）：
 ```bash
 ./decipher -i <bcrypt_hash> -a bcrypt -d ./custom_dict.txt
@@ -148,24 +223,20 @@ decipher 的核心原理是**彩虹版碰撞 + 实时hash计算 + 可逆算法�
 ./decipher -i <hash> -a md5,bcrypt -d ./custom_dict.txt
 ```
 
-### 4.7 加密模式
+### 7. 加密模式
 使用 MD5 算法加密明文 "123456"：
 ```bash
 ./decipher --et 123456 -a md5
 ```
 
-使用多个算法加密明文 "password" 并添加 Salt "salt123"：
+### 8. 加密模式 使用多个算法加密明文 "password" 并添加 Salt "salt123"：
 ```bash
 ./decipher --et password --es salt123 -a md5,sha1,sha256
 ```
 
-### 4.8 动态破解示例
+### 9. 动态破解示例
 使用自定义字典和动态算法进行解密：
 ```bash
 ./decipher -i <bcrypt_hash> -a bcrypt -d ./custom_dict.txt
 ```
 
-注意：动态破解只在以下情况下执行：
-1. 预计算算法解密失败后
-2. 用户明确指定了动态算法（如bcrypt）
-3. 程序会按顺序尝试预计算算法、动态算法和加解密算法

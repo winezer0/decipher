@@ -22,4 +22,4 @@ func (a *MD5DoubleAlgo) Recover(token, secret, candidatePlain string) (string, e
 	return "", types.ErrVerificationFailed
 }
 
-func (a *MD5DoubleAlgo) NeedsPrecomputation() bool { return true }
+func (a *MD5DoubleAlgo) NeedAddToPredb() bool { return true }

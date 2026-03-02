@@ -25,7 +25,7 @@ func (a *SHA256Algo) Recover(token, secret, candidatePlain string) (string, erro
 	return "", types.ErrVerificationFailed
 }
 
-func (a *SHA256Algo) NeedsPrecomputation() bool { return true }
+func (a *SHA256Algo) NeedAddToPredb() bool { return true }
 
 func sha256Hex(s string) string {
 	h := sha256.New()

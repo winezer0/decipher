@@ -41,4 +41,4 @@ func (a *MySQLPre41Algo) Recover(token, secret, candidatePlain string) (string, 
 	return "", types.ErrVerificationFailed
 }
 
-func (a *MySQLPre41Algo) NeedsPrecomputation() bool { return true }
+func (a *MySQLPre41Algo) NeedAddToPredb() bool { return true }

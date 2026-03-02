@@ -20,10 +20,10 @@ func TestMD5PassMD5SaltAlgo_GetAlgoType(t *testing.T) {
 	}
 }
 
-func TestMD5PassMD5SaltAlgo_NeedsPrecomputation(t *testing.T) {
+func TestMD5PassMD5SaltAlgo_NeedAddToPredb(t *testing.T) {
 	algo := &MD5PassMD5SaltAlgo{}
-	if got := algo.NeedsPrecomputation(); !got {
-		t.Errorf("MD5PassMD5SaltAlgo.NeedsPrecomputation() = %v, want true", got)
+	if got := algo.NeedAddToPredb(); !got {
+		t.Errorf("MD5PassMD5SaltAlgo.NeedAddToPredb() = %v, want true", got)
 	}
 }
 

@@ -29,4 +29,4 @@ func (a *SHA384Algo) Recover(token, secret, candidatePlain string) (string, erro
 	return "", types.ErrVerificationFailed
 }
 
-func (a *SHA384Algo) NeedsPrecomputation() bool { return true }
+func (a *SHA384Algo) NeedAddToPredb() bool { return true }

@@ -14,7 +14,7 @@ func (a *Base64Algo) GetAlgoType() types.AlgoType {
 	return types.AlgoIsEncrypt
 }
 
-func (a *Base64Algo) NeedsPrecomputation() bool {
+func (a *Base64Algo) NeedAddToPredb() bool {
 	return false
 }
 

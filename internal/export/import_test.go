@@ -8,7 +8,7 @@ import (
 
 func TestLoadSuccessCacheMap(t *testing.T) {
 	tempDir := t.TempDir()
-	cacheFile := filepath.Join(tempDir, "success.cache.csv")
+	cacheFile := filepath.Join(tempDir, "success.predb.csv")
 
 	// Create a dummy cache file
 	content := "hash_salt,clear_text,salt,algo,algo_type\n" +

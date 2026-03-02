@@ -5,6 +5,9 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"strings"
+
+	"github.com/winezer0/xutils/utils"
 )
 
 // ExportCSV 将解密结果追加导出到 CSV 文件。
@@ -34,7 +37,8 @@ func ExportCSV(filePath string, crackerResults []cracker.CrackerResult) error {
 	for _, res := range crackerResults {
 		hashSalt := res.Hash
 		if res.Salt != "" {
-			hashSalt = fmt.Sprintf("%s:%s", res.Hash, res.Salt)
+			element := []string{res.Hash, res.Salt}
+			hashSalt = strings.Join(element, cracker.ConcatSymbol)
 		}
 
 		record := []string{
@@ -54,8 +58,13 @@ func ExportCSV(filePath string, crackerResults []cracker.CrackerResult) error {
 	return writer.Error()
 }
 
+// ExportJSON 将数据导出到 JSON 文件
+func ExportJSON(filePath string, data interface{}) error {
+	return utils.SaveJSON(filePath, data)
+}
+
 // ExportFailureCSV 将解密失败的目标导出到 CSV 文件
-func ExportFailureCSV(filePath string, failedTargets map[string]cracker.Target) error {
+func ExportFailureCSV(filePath string, failedTargets map[string]cracker.HashSaltTarget) error {
 	if len(failedTargets) == 0 {
 		return nil
 	}

@@ -22,4 +22,4 @@ func (a *SHA1DoubleAlgo) Recover(token, secret, candidatePlain string) (string, 
 	return "", types.ErrVerificationFailed
 }
 
-func (a *SHA1DoubleAlgo) NeedsPrecomputation() bool { return true }
+func (a *SHA1DoubleAlgo) NeedAddToPredb() bool { return true }

@@ -28,4 +28,4 @@ func (a *MD5Base64Algo) Recover(token, secret, candidatePlain string) (string, e
 	return "", types.ErrVerificationFailed
 }
 
-func (a *MD5Base64Algo) NeedsPrecomputation() bool { return true }
+func (a *MD5Base64Algo) NeedAddToPredb() bool { return true }

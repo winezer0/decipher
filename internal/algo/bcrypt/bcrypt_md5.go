@@ -31,7 +31,7 @@ func (a *BcryptMd5Algo) Recover(token, secret, candidatePlain string) (string, e
 	return "", types.ErrVerificationFailed
 }
 
-func (a *BcryptMd5Algo) NeedsPrecomputation() bool { return false }
+func (a *BcryptMd5Algo) NeedAddToPredb() bool { return false }
 
 func md5Sum(plaintext string) string {
 	h := md5.New()

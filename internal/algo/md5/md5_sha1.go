@@ -28,4 +28,4 @@ func (a *MD5SHA1Algo) Recover(token, secret, candidatePlain string) (string, err
 	return "", types.ErrVerificationFailed
 }
 
-func (a *MD5SHA1Algo) NeedsPrecomputation() bool { return true }
+func (a *MD5SHA1Algo) NeedAddToPredb() bool { return true }

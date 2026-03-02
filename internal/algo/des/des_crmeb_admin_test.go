@@ -11,10 +11,10 @@ func TestCrmebAdminAlgo_Name(t *testing.T) {
 	}
 }
 
-func TestCrmebAdminAlgo_NeedsPrecomputation(t *testing.T) {
+func TestCrmebAdminAlgo_NeedAddToPredb(t *testing.T) {
 	algo := &CrmebAdminAlgo{}
-	if got := algo.NeedsPrecomputation(); got != false {
-		t.Errorf("CrmebAdminAlgo.NeedsPrecomputation() = %v, want false", got)
+	if got := algo.NeedAddToPredb(); got != false {
+		t.Errorf("CrmebAdminAlgo.NeedAddToPredb() = %v, want false", got)
 	}
 }
 

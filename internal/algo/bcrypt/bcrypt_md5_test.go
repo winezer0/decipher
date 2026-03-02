@@ -18,9 +18,9 @@ func TestBcryptMd5Algo(t *testing.T) {
 		t.Errorf("GetAlgoType() = %v; want %v", got, types.AlgoIsDynamic)
 	}
 
-	// Test NeedsPrecomputation
-	if got := algo.NeedsPrecomputation(); got != false {
-		t.Errorf("NeedsPrecomputation() = %v; want %v", got, false)
+	// Test NeedAddToPredb
+	if got := algo.NeedAddToPredb(); got != false {
+		t.Errorf("NeedAddToPredb() = %v; want %v", got, false)
 	}
 
 	// Test Seal and Recover with non-empty plaintext

@@ -23,4 +23,4 @@ func (a *MD5BTAdminAlgo) Recover(token, secret, candidatePlain string) (string, 
 	return "", types.ErrVerificationFailed
 }
 
-func (a *MD5BTAdminAlgo) NeedsPrecomputation() bool { return true }
+func (a *MD5BTAdminAlgo) NeedAddToPredb() bool { return true }

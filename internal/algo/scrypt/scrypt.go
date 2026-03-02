@@ -48,7 +48,7 @@ func (a *ScryptAlgo) Recover(token, secret, candidatePlain string) (string, erro
 	return "", types.ErrVerificationFailed
 }
 
-func (a *ScryptAlgo) NeedsPrecomputation() bool { return false }
+func (a *ScryptAlgo) NeedAddToPredb() bool { return false }
 
 type scryptParams struct {
 	N      int

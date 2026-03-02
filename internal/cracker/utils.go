@@ -1,93 +1,98 @@
 package cracker
 
 import (
-	"os"
-	"path/filepath"
+	"bufio"
+	"decipher/internal/embeds"
 	"strings"
 
 	"github.com/winezer0/xutils/logging"
 	"github.com/winezer0/xutils/utils"
 )
 
-func ParseStringsToTargets(inputs []string) []Target {
-	var targets []Target
-	for _, hashStr := range inputs {
-		// 加载 Input，可能是文件或字符串
-		lines, err := utils.LoadPathOrString(hashStr)
-		if err != nil {
-			logging.Warnf("Failed to load input %s: %v", hashStr, err)
+func ParseFilesToTargets(inputs []string) []HashSaltTarget {
+	var targets []HashSaltTarget
+	lines := ParseFilesToStrings(inputs, false)
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
+		// 允许 hash/hash:salt/hash:salt:xxx 格式常见字符串 但是只取前面两节
+		// 允许 hash/hash|salt/hash|salt|xxx 格式自定义字符串 也只取前面两节用于解密
+		var parts []string
+		if strings.Contains(line, ConcatSymbol) {
+			parts = strings.Split(line, ConcatSymbol)
+		} else {
+			parts = strings.Split(line, ":")
+		}
+		hash := strings.TrimSpace(parts[0])
+		salt := ""
+		if len(parts) > 1 {
+			salt = strings.TrimSpace(parts[1])
+		}
+		if hash != "" {
+			targets = append(targets, HashSaltTarget{Hash: hash, Salt: salt})
+		}
+	}
+	return targets
+}
 
+// ParseFilesToStrings 返回字符串的列表
+func ParseFilesToStrings(inputs []string, trims bool) []string {
+	var targets []string
+	for _, path := range inputs {
+		// 加载 Input，可能是文件或字符串
+		lines, err := utils.LoadPathOrString(path)
+		if err != nil {
+			logging.Warnf("Failed to load input %s: %v", path, err)
+			continue
+		}
 		for _, line := range lines {
-			line = strings.TrimSpace(line)
-			if line == "" {
-				continue
+			if trims {
+				line = strings.TrimSpace(line)
 			}
-			parts := strings.SplitN(line, ":", 2)
-			hash := strings.TrimSpace(parts[0])
-			salt := ""
-			if len(parts) > 1 {
-				salt = strings.TrimSpace(parts[1])
-			}
-			if hash != "" {
-				targets = append(targets, Target{Hash: hash, Salt: salt})
+			if line != "" {
+				targets = append(targets, line)
 			}
 		}
 	}
 	return targets
 }
 
-// HashStringFormat 标准化hash计算结果
-func HashStringFormat(line string) string {
-	return strings.ReplaceAll(strings.ToLower(line), "-", "")
+// loadBuiltinPlainsEntries 加载内置的明文字典
+func loadBuiltinPlainsEntries() []string {
+	var entries []string
+	reader := embeds.GetBuiltinPlainsDict()
+	sc := bufio.NewScanner(reader)
+	buf := make([]byte, 0, DefaultScannerBufferSize)
+	sc.Buffer(buf, MaxScannerTokenSize)
+	for sc.Scan() {
+		text := strings.TrimSpace(sc.Text())
+		if text != "" {
+			entries = append(entries, text)
+		}
+	}
+	if err := sc.Err(); err != nil {
+		logging.Errorf("Failed to read builtin plains dict: %v", err)
+	}
+	return entries
 }
 
-func parseSalts(addSalts []string) ([]string, string) {
-	var salts []string
-	var saltSigParts []string
-
-	if len(addSalts) > 0 {
-		for _, s := range addSalts {
-			if info, err := os.Stat(s); err == nil && !info.IsDir() {
-				absPath, _ := filepath.Abs(s)
-				saltSigParts = append(saltSigParts, "File:"+absPath)
-				lines, err := utils.LoadPathOrString(s)
-				if err == nil {
-					salts = append(salts, lines...)
-				}
-			} else {
-				saltSigParts = append(saltSigParts, "Raw:"+s)
-				lines, err := utils.LoadPathOrString(s)
-				if err == nil {
-					salts = append(salts, lines...)
-				}
-			}
+// loadBuiltinSaltsEntries 加载内置的salt字典
+func loadBuiltinSaltsEntries() []string {
+	var entries []string
+	reader := embeds.GetBuiltinSaltsDict()
+	sc := bufio.NewScanner(reader)
+	buf := make([]byte, 0, DefaultScannerBufferSize)
+	sc.Buffer(buf, MaxScannerTokenSize)
+	for sc.Scan() {
+		text := strings.TrimSpace(sc.Text())
+		if text != "" {
+			entries = append(entries, text)
 		}
 	}
-	if len(salts) == 0 {
-		salts = []string{""}
-		saltSigParts = append(saltSigParts, "None")
+	if err := sc.Err(); err != nil {
+		logging.Errorf("Failed to read builtin salts dict: %v", err)
 	}
-	return salts, strings.Join(saltSigParts, ",")
-}
-
-func DeduplicateCache(cacheDir string) {
-	entries, err := os.ReadDir(cacheDir)
-	if err != nil {
-		logging.Errorf("Failed to read cache directory: %v", err)
-		return
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".cache") {
-			continue
-		}
-		path := filepath.Join(cacheDir, entry.Name())
-		logging.Infof("Deduplicating %s...", entry.Name())
-		if err := utils.DeduplicateFile(path); err != nil {
-			logging.Errorf("Failed to deduplicate %s: %v", entry.Name(), err)
-		}
-	}
-	logging.Info("Cache deduplication completed.")
+	return entries
 }

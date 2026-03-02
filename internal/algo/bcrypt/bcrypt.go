@@ -14,7 +14,7 @@ func (a *BcryptAlgo) GetAlgoType() types.AlgoType {
 	return types.AlgoIsDynamic
 }
 
-func (a *BcryptAlgo) NeedsPrecomputation() bool {
+func (a *BcryptAlgo) NeedAddToPredb() bool {
 	return false
 }
 

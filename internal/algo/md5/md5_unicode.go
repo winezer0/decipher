@@ -25,4 +25,4 @@ func (a *MD5UnicodeAlgo) Recover(token, secret, candidatePlain string) (string, 
 	return "", types.ErrVerificationFailed
 }
 
-func (a *MD5UnicodeAlgo) NeedsPrecomputation() bool { return true }
+func (a *MD5UnicodeAlgo) NeedAddToPredb() bool { return true }

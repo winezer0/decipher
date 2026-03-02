@@ -20,10 +20,10 @@ func TestMD5TripleAlgo_GetAlgoType(t *testing.T) {
 	}
 }
 
-func TestMD5TripleAlgo_NeedsPrecomputation(t *testing.T) {
+func TestMD5TripleAlgo_NeedAddToPredb(t *testing.T) {
 	algo := &MD5TripleAlgo{}
-	if got := algo.NeedsPrecomputation(); !got {
-		t.Errorf("MD5TripleAlgo.NeedsPrecomputation() = %v, want true", got)
+	if got := algo.NeedAddToPredb(); !got {
+		t.Errorf("MD5TripleAlgo.NeedAddToPredb() = %v, want true", got)
 	}
 }
 

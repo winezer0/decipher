@@ -4,7 +4,7 @@ go 1.25.5
 
 require (
 	github.com/jessevdk/go-flags v1.6.1
-	github.com/winezer0/xutils v0.1.4-0.20260227134235-e32549bad6a6
+	github.com/winezer0/xutils v0.1.5-0.20260306142925-ee411a44716d
 	golang.org/x/crypto v0.48.0
 )
 

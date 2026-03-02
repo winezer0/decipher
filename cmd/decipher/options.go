@@ -15,8 +15,8 @@ import (
 
 const (
 	AppName      = "decipher"
-	AppVersion   = "0.0.2"
-	BuildDate    = "2026-03-01"
+	AppVersion   = "0.0.4"
+	BuildDate    = "2026-03-06"
 	AppShortDesc = "common hash fast cracker"
 	AppLongDesc  = "common hash fast cracker"
 )
@@ -25,26 +25,36 @@ const (
 type Options struct {
 	Inputs []string `short:"i" long:"inputs" description:"Input hashes or file containing hashes (one per line)"`
 
-	AlgoKeys []string `short:"a" long:"algos" description:"filter algorithm(s) key to use (e.g. md5)"`
-	Workers  int      `short:"w" long:"workers" description:"Number of concurrent workers for cache generation" default:"0"`
+	// 操作模式 add 添加数据到predb/enc加密/dec解密/
+	Mode string `short:"m" long:"mode" description:"action mode" choices:"add,enc,dec" default:"dec"`
 
-	// 字典文件, 用于预计算hash和动态解密，预计算hash相同文件只会计算一次
-	DecDicts   []string `short:"d" long:"dec-dicts" description:"custom dicts, will add to pre-db and cracking dynamic hash"`
-	DecSecrets []string `short:"s" long:"dec-secrets" description:"custom secrets, will add to pre-db and cracking (hash salts or decrypt keys)" default:"66666"`
+	// 字典文件, 用于预计算predb/解密/加密的 明文字典和盐密钥文件，预计算predb时相同文件只会计算一次
+	UsedDicts   []string `short:"d" long:"used-dicts" description:"custom dicts, will add to pre-db and cracking dynamic hash"`
+	UsedSecrets []string `short:"s" long:"used-secrets" description:"custom secrets, will add to pre-db and cracking (hash salts or decrypt keys)"`
+	// 实际使用的算法，为空时使用所有算法
+	AlgoKeys []string `short:"a" long:"algos" description:"Keywords used for algos filtering (e.g. md5)"`
 
-	//加密计算字符串hash
-	EncryptText []string `long:"et" description:"Text string or file containing text to encrypt"`
-	EncryptSalt []string `long:"es" description:"Salt string or file containing salt to encrypt"`
+	// 性能配置
+	Workers int `short:"w" long:"workers" description:"Number of concurrent workers for cache generation" default:"0"`
 
-	Output string `short:"o" long:"output" description:"Output CSV file for decrypted results"`
+	// 输出配置
+	Output     string `short:"o" long:"output" description:"Output CSV file for decrypted results"`
+	OutputType string `short:"O" long:"output-type" description:"Output format" choices:"json,csv" default:"csv"`
 
-	ListAlgos bool `short:"L" long:"list" description:"List all available algorithms"`
-	ReCache   bool `short:"R" long:"rec" description:"Cleans cache dir all files"`
-	DeCache   bool `short:"D" long:"dec" description:"Deduplicate all cache files"`
-	Version   bool `short:"v" long:"version" description:"display the program version and exit"`
+	// 其他配置
+	ListAlgos  bool `short:"L" long:"list" description:"List all available algorithms"`
+	ClearCache bool `short:"C" long:"rec" description:"Cleans cache dir all files"`
+	DedupPredb bool `short:"D" long:"dec" description:"Deduplicate all cache files"`
 
-	DataDir string `long:"data-dir" description:"Dir for store hash db files" default:"~/.decipher"`
+	// NohashCache 禁用哈希缓存，不进行缓存读写
+	NohashCache bool `short:"N" long:"no-hash-cache" description:"Disable hash cracking cache"`
 
+	// 缓存目录配置 一般不需要修改
+	PredbDir     string `long:"predb-dir" description:"Dir for store hash pre-db files" default:"~/.decipher"`
+	RunCacheDir  string `long:"run-cache-dir" description:"Dir for store dynaic hash cache files" default:"decipher_cache"`
+	FailureCache string `long:"failure-cache" description:"Hash record with decryption failure" default:"decipher.failure.csv"`
+
+	Version       bool   `short:"v" long:"version" description:"display the program version and exit"`
 	LogLevel      string `long:"ll" description:"Log level (debug, info, warn, error)" default:"info"`
 	LogFile       string `long:"lf" description:"Log file path"`
 	ConsoleFormat string `long:"lcf" description:"console log format, Choices T(time)/L(level)/C(caller)/F(func)/M(msg), or empty/off" default:"LM"`
@@ -96,51 +106,38 @@ func InitOptionsArgs(minimumParams int) (*Options, *flags.Parser) {
 		os.Exit(0)
 	}
 
-	// 工具信息存储目录
-	opts.DataDir = utils.ReplaceUserHome(opts.DataDir)
-	if err := utils.EnsureDir(opts.DataDir, false); err != nil {
-		logging.Fatalf("Error init tools data dir%s: %v", opts.DataDir, err)
-	}
-	logging.Debugf("Tool %s Data Dir: %s", AppName, opts.DataDir)
+	// 循环处理：替换用户目录
+	opts.PredbDir = utils.ReplaceUserHome(opts.PredbDir)
+	opts.RunCacheDir = utils.ReplaceUserHome(opts.RunCacheDir)
+	opts.FailureCache = utils.ReplaceUserHome(opts.FailureCache)
+	cachePaths := []string{opts.PredbDir, opts.RunCacheDir, opts.FailureCache}
 
-	// 如果开启了 ReCache，清空缓存目录中的数据
-	if opts.ReCache {
-		logging.Infof("cleaning up cache dir : %s", opts.DataDir)
-		if err := os.RemoveAll(opts.DataDir); err != nil {
-			logging.Errorf(" remove cache dir %s error: %v", opts.DataDir, err)
-		}
-		// Also clean up runcache directory for dynamic cracking
-		cacheDir := ".decipher.cache"
-		logging.Infof("cleaning up dynamic hash cache dir : %s", cacheDir)
-		if err := os.RemoveAll(cacheDir); err != nil {
-			logging.Errorf(" remove dynamic hash cache dir %s error: %v", cacheDir, err)
-		}
-
-		logging.Infof("cleaning up cache info success : %s, %s", opts.DataDir, cacheDir)
+	logging.Infof("%s data dirs: %v", AppName, cachePaths)
+	// ClearCache，清空缓存目录中的数据
+	if opts.ClearCache {
+		logging.Infof("cleaning up cache and db dir: %v", cachePaths)
+		utils.ClearPaths(cachePaths, false, 0)
+		logging.Infof("cleanup cache and db success: %v", cachePaths)
 		os.Exit(0)
 	}
 
-	// 处理去重 (DeCache)
-	if opts.DeCache {
-		logging.Infof("deduplicate cache dir files: %s", opts.DataDir)
-		cracker.DeduplicateCache(opts.DataDir)
-		logging.Infof("deduplicate cache dir files success: %s", opts.DataDir)
+	// 处理去重 (DedupPredb)
+	if opts.DedupPredb {
+		logging.Infof("deduplicate cache dir files: %s", opts.PredbDir)
+		cracker.DeduplicateCache(opts.PredbDir)
+		logging.Infof("deduplicate cache dir files success: %s", opts.PredbDir)
 		os.Exit(0)
 	}
 
-	// 优化结果文件存储路径
+	// 优化结果文件存储路径 <AppName>.<Mode>.<OutputType>
 	if opts.Output == "" {
-		opts.Output = "decipher.results.csv"
+		opts.Output = fmt.Sprintf("%s.%s.%s", AppName, opts.Mode, opts.OutputType)
 	}
 
 	// 处理参数中的逗号
 	opts.Inputs = cmdutils.FormatCmdsComma(opts.Inputs)
-	opts.DecDicts = cmdutils.FormatCmdsComma(opts.DecDicts)
-	opts.DecSecrets = cmdutils.FormatCmdsComma(opts.DecSecrets)
 	opts.AlgoKeys = cmdutils.FormatCmdsComma(opts.AlgoKeys)
-	opts.DecDicts = cmdutils.FormatCmdsComma(opts.DecDicts)
-	opts.EncryptText = cmdutils.FormatCmdsComma(opts.EncryptText)
-	opts.EncryptSalt = cmdutils.FormatCmdsComma(opts.EncryptSalt)
-
+	opts.UsedDicts = cmdutils.FormatCmdsComma(opts.UsedDicts)
+	opts.UsedSecrets = cmdutils.FormatCmdsComma(opts.UsedSecrets)
 	return opts, parser
 }

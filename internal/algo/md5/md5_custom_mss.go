@@ -23,4 +23,4 @@ func (a *MD5CustomMssAlgo) Recover(token, secret, candidatePlain string) (string
 	return "", types.ErrVerificationFailed
 }
 
-func (a *MD5CustomMssAlgo) NeedsPrecomputation() bool { return true }
+func (a *MD5CustomMssAlgo) NeedAddToPredb() bool { return true }

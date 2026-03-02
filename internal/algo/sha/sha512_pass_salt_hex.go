@@ -33,4 +33,4 @@ func (a *SHA512PassSaltHexAlgo) Recover(token, secret, candidatePlain string) (s
 	return "", types.ErrVerificationFailed
 }
 
-func (a *SHA512PassSaltHexAlgo) NeedsPrecomputation() bool { return true }
+func (a *SHA512PassSaltHexAlgo) NeedAddToPredb() bool { return true }

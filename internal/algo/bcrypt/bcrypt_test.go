@@ -21,10 +21,10 @@ func TestBcryptAlgo_GetAlgoType(t *testing.T) {
 	}
 }
 
-func TestBcryptAlgo_NeedsPrecomputation(t *testing.T) {
+func TestBcryptAlgo_NeedAddToPredb(t *testing.T) {
 	algo := &BcryptAlgo{}
-	if got := algo.NeedsPrecomputation(); got != false {
-		t.Errorf("BcryptAlgo.NeedsPrecomputation() = %v; want %v", got, false)
+	if got := algo.NeedAddToPredb(); got != false {
+		t.Errorf("BcryptAlgo.NeedAddToPredb() = %v; want %v", got, false)
 	}
 }
 
@@ -104,7 +104,7 @@ func TestBcryptAlgo_Recover(t *testing.T) {
 
 func TestBcryptAlgo_Recover_UserProvided(t *testing.T) {
 	algo := &BcryptAlgo{}
-	
+
 	// 测试使用用户提供的数据
 	plaintext := "123456"
 	salt := "666666"

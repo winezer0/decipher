@@ -35,4 +35,4 @@ func (a *MySQL5Algo) Recover(token, secret, candidatePlain string) (string, erro
 	return "", types.ErrVerificationFailed
 }
 
-func (a *MySQL5Algo) NeedsPrecomputation() bool { return true }
+func (a *MySQL5Algo) NeedAddToPredb() bool { return true }

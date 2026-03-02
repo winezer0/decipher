@@ -23,4 +23,4 @@ func (a *MD5CustomGmshopAlgo) Recover(token, secret, candidatePlain string) (str
 	return "", types.ErrVerificationFailed
 }
 
-func (a *MD5CustomGmshopAlgo) NeedsPrecomputation() bool { return true }
+func (a *MD5CustomGmshopAlgo) NeedAddToPredb() bool { return true }

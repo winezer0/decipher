@@ -33,4 +33,4 @@ func (a *MD5SaltPassSaltHexAlgo) Recover(token, secret, candidatePlain string) (
 	return "", types.ErrVerificationFailed
 }
 
-func (a *MD5SaltPassSaltHexAlgo) NeedsPrecomputation() bool { return true }
+func (a *MD5SaltPassSaltHexAlgo) NeedAddToPredb() bool { return true }

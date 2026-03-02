@@ -20,10 +20,10 @@ func TestSHA256PassSaltAlgo_GetAlgoType(t *testing.T) {
 	}
 }
 
-func TestSHA256PassSaltAlgo_NeedsPrecomputation(t *testing.T) {
+func TestSHA256PassSaltAlgo_NeedAddToPredb(t *testing.T) {
 	algo := &SHA256PassSaltAlgo{}
-	if got := algo.NeedsPrecomputation(); !got {
-		t.Errorf("SHA256PassSaltAlgo.NeedsPrecomputation() = %v, want true", got)
+	if got := algo.NeedAddToPredb(); !got {
+		t.Errorf("SHA256PassSaltAlgo.NeedAddToPredb() = %v, want true", got)
 	}
 }
 
