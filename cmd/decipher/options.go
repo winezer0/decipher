@@ -15,8 +15,8 @@ import (
 
 const (
 	AppName      = "decipher"
-	AppVersion   = "0.0.2"
-	BuildDate    = "2026-03-01"
+	AppVersion   = "0.0.3"
+	BuildDate    = "2026-03-02"
 	AppShortDesc = "common hash fast cracker"
 	AppLongDesc  = "common hash fast cracker"
 )
@@ -36,7 +36,8 @@ type Options struct {
 	EncryptText []string `long:"et" description:"Text string or file containing text to encrypt"`
 	EncryptSalt []string `long:"es" description:"Salt string or file containing salt to encrypt"`
 
-	Output string `short:"o" long:"output" description:"Output CSV file for decrypted results"`
+	Output     string `short:"o" long:"output" description:"Output CSV file for decrypted results"`
+	OutputType string `short:"O" long:"output-type" description:"Output format: csv or json" default:"csv"`
 
 	ListAlgos bool `short:"L" long:"list" description:"List all available algorithms"`
 	ReCache   bool `short:"R" long:"rec" description:"Cleans cache dir all files"`

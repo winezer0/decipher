@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"decipher/internal/algo"
 	"decipher/internal/embeds"
-	"decipher/internal/myutil"
+	"decipher/internal/myutils"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -39,7 +39,7 @@ func buildDictTasks(addDicts []string) []dictTask {
 	}
 
 	// 如果用户输入的是字符串列表，而不是文件列表字典 需要写入到临时文件中 因为后续pre-db使用的是文件路径
-	addDicts = myutil.ConvertStringsToFiles(addDicts, "temp.dict")
+	addDicts = myutils.ConvertStringsToFiles(addDicts, "temp.dict")
 	for _, d := range addDicts {
 		dPath := d
 		absPath, _ := filepath.Abs(d)

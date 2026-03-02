@@ -147,12 +147,18 @@ func main() {
 
 	if len(allResults) > 0 {
 		// Save to success cache
-		if err := export.ExportCSV(successCacheFile, allResults); err != nil {
+		if err := export.ExportCSV(successCacheFile, allResults); err == nil {
 			logging.Infof("Success(%d) targets cached to %s", len(allResults), successCacheFile)
 		}
 		// Save to result file
-		if err := export.ExportCSV(opts.Output, allResults); err != nil {
-			logging.Infof("Results (%d) targets exported to %s", len(allResults), opts.Output)
+		if strings.ToLower(opts.OutputType) == "json" {
+			if err := export.ExportJSON(opts.Output, allResults); err == nil {
+				logging.Infof("Results (%d) targets exported to %s", len(allResults), opts.Output)
+			}
+		} else {
+			if err := export.ExportCSV(opts.Output, allResults); err == nil {
+				logging.Infof("Results (%d) targets exported to %s", len(allResults), opts.Output)
+			}
 		}
 	}
 	// Export failed targets to  CSV

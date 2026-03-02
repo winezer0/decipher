@@ -4,6 +4,7 @@ import (
 	"decipher/internal/cracker"
 	"encoding/csv"
 	"fmt"
+	"github.com/winezer0/xutils/utils"
 	"os"
 )
 
@@ -52,6 +53,11 @@ func ExportCSV(filePath string, crackerResults []cracker.CrackerResult) error {
 
 	writer.Flush()
 	return writer.Error()
+}
+
+// ExportJSON 将数据导出到 JSON 文件
+func ExportJSON(filePath string, data interface{}) error {
+	return utils.SaveJSON(filePath, data)
 }
 
 // ExportFailureCSV 将解密失败的目标导出到 CSV 文件

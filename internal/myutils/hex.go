@@ -1,4 +1,4 @@
-package utils
+package myutils
 
 import "encoding/hex"
 

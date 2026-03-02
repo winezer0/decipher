@@ -18,7 +18,7 @@ for /d %%i in (cmd\*) do (
         echo Building !exe_name!...
         
         rem build the whole command directory as a package (all *.go files)
-        go build -o bin\!exe_name!.exe .\%%i
+        go build -v -trimpath -ldflags "-s -w" -o bin\!exe_name!.exe .\%%i
         
         if !errorlevel! equ 0 (
             echo Successfully built !exe_name!.exe

@@ -1,4 +1,4 @@
-package myutil
+package myutils
 
 import (
 	"os"
