@@ -2,6 +2,8 @@ package md5
 
 import (
 	"decipher/internal/algo/types"
+	"decipher/internal/ident"
+
 	"golang.org/x/text/encoding/unicode"
 )
 
@@ -10,6 +12,8 @@ type MD5UnicodeAlgo struct{}
 func (a *MD5UnicodeAlgo) Name() string { return "md5(unicode($pass))" }
 
 func (a *MD5UnicodeAlgo) GetAlgoType() types.AlgoType { return types.AlgoIsStatic }
+
+func (a *MD5UnicodeAlgo) NeedSalt() bool { return false }
 
 func (a *MD5UnicodeAlgo) Seal(plaintext, secret string) (string, error) {
 	enc := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM).NewEncoder()
@@ -26,3 +30,7 @@ func (a *MD5UnicodeAlgo) Recover(token, secret, candidatePlain string) (string, 
 }
 
 func (a *MD5UnicodeAlgo) NeedAddToPredb() bool { return true }
+
+func (a *MD5UnicodeAlgo) Identify(token string) bool {
+	return ident.IsHashStringWithLen(token, 32)
+}

@@ -5,6 +5,7 @@ import (
 	"decipher/internal/algo/types"
 	"encoding/base64"
 	"encoding/hex"
+	"strings"
 )
 
 type SHA256CustomNcCloudAlgo struct{}
@@ -12,6 +13,8 @@ type SHA256CustomNcCloudAlgo struct{}
 func (a *SHA256CustomNcCloudAlgo) Name() string { return "sha256_custom_nccloud" }
 
 func (a *SHA256CustomNcCloudAlgo) GetAlgoType() types.AlgoType { return types.AlgoIsStatic }
+
+func (a *SHA256CustomNcCloudAlgo) NeedSalt() bool { return true }
 
 func (a *SHA256CustomNcCloudAlgo) Seal(plaintext, secret string) (string, error) {
 	combined := secret + plaintext
@@ -35,3 +38,7 @@ func (a *SHA256CustomNcCloudAlgo) Recover(token, secret, candidatePlain string) 
 }
 
 func (a *SHA256CustomNcCloudAlgo) NeedAddToPredb() bool { return true }
+
+func (a *SHA256CustomNcCloudAlgo) Identify(token string) bool {
+	return strings.HasPrefix(token, "S_S++")
+}

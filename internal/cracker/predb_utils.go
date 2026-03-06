@@ -57,3 +57,13 @@ func getAlgoNameFromCacheFile(cacheFile os.DirEntry) string {
 	}
 	return algoName
 }
+
+// BuildTargetMap 构建目标哈希映射
+func BuildTargetMap(targets []HashSaltTarget) map[string][]HashSaltTarget {
+	targetMap := make(map[string][]HashSaltTarget)
+	for _, t := range targets {
+		hash := HashStringFormat(t.Hash)
+		targetMap[hash] = append(targetMap[hash], t)
+	}
+	return targetMap
+}

@@ -13,79 +13,9 @@ decipher 是一个基于 Go 语言编写的高性能本地哈希解密工具。�
 *   **Salt支持**: 支持带 Salt 的哈希计算和解密，可灵活配置 Salt 组合模式。
 *   **内置字典**: 仅集成部分简单常用弱口令，更多字典需要用户添加。
 *   **算法猜测**: 支持通过hash和salt解密从而实现算法猜测。
-*   **结果导出**: 支持将解密结果导出为 CSV 文件。
+*   **结果导出**: 支持将解密结果导出为 CSV 或 JSON 文件。
 
-## 2. 算法列表 20260302
-提示: 目前已实现cmd5.com加密列表中的所有加密算法示例
-```
-Available algorithms:
-  1:  base64
-  2:  des_crmeb_admin
-  3:  md5
-  4:  md5_middle
-  5:  md5(md5($pass))
-  6:  md5(md5($pass).NiuCloud)
-  7:  md5(md5(md5($pass)))
-  8:  md5(unicode($pass))
-  9:  base64(md5($pass))
-  10:  md5($pass.$salt)
-  11:  md5($salt.$pass)
-  12:  md5($salt.$pass.$salt)
-  13:  md5($salt.md5($pass))
-  14:  md5(md5($salt).$pass)
-  15:  md5($pass.md5($salt))
-  16:  md5(md5($pass).$salt)
-  17:  md5(md5($salt).md5($pass))
-  18:  md5(md5($pass).md5($salt))
-  19:  md5(sha1($pass))
-  20:  md5(substring(md5($pass),8,16))
-  21:  md5($pass.md5(y.$salt.x).2020)
-  22:  md5_custom_mss
-  23:  md5_custom_nc65
-  24:  md5_custom_gmshop
-  25:  md5_md5_md5_bt_admin
-  26:  md5($pass.$salt)_hex
-  27:  md5($salt.$pass)_hex
-  28:  md5($salt.$pass.$salt)_hex
-  29:  md5($salt.md5($pass))_hex
-  30:  md5(md5($salt).$pass)_hex
-  31:  md5($pass.md5($salt))_hex
-  32:  md5(md5($pass).$salt);VB;DZ_hex
-  33:  md5(md5($salt).md5($pass))_hex
-  34:  md5(md5($pass).md5($salt))_hex
-  35:  sha1
-  36:  sha1($pass.$salt)
-  37:  sha1($salt.$pass)
-  38:  sha1(sha1($pass))
-  39:  sha1(md5($pass))
-  40:  sha256
-  41:  sha256($pass.$salt)
-  42:  sha256($salt.$pass)
-  43:  sha256(md5($pass))
-  44:  sha256_shiro
-  45:  sha256_custom_nccloud
-  46:  sha384
-  47:  sha512
-  48:  sha512($pass.$salt)
-  49:  sha512($salt.$pass)
-  50:  sha1($pass.$salt)_hex
-  51:  sha1($salt.$pass)_hex
-  52:  sha256($pass.$salt)_hex
-  53:  sha256($salt.$pass)_hex
-  54:  sha512($pass.$salt)_hex
-  55:  sha512($salt.$pass)_hex
-  56:  mysql
-  57:  mysql5
-  58:  ntlm
-  59:  MSSQL2015
-  60:  bcrypt
-  61:  bcrypt_md5
-  62:  argon2
-  63:  scrypt
-  64:  phpass
-```
-
-## 3. 程序运行逻辑与解密原理
+## 2. 程序运行逻辑与解密原理
 
 decipher 的核心原理是**彩虹版碰撞 + 实时hash计算 + 可逆算法解密**。
 
@@ -155,27 +85,38 @@ decipher 的核心原理是**彩虹版碰撞 + 实时hash计算 + 可逆算法�
 使用 `./decipher -h` 可查看帮助信息。以下是参数的中文详细介绍：
 
 ### 基础输入输出
-*   `-i, --inputs`: 输入要解密的哈希值，或包含哈希值的文件路径（每行一个）。
-*   `-o, --output`: 指定解密结果导出的 CSV 文件路径。
+*   `-i, --inputs`: 输入要解密/加密/识别的哈希值或明文，或包含内容的文件路径（每行一个）。
+*   `-o, --output`: 指定输出文件路径（默认根据模式自动生成）。
+*   `-O, --output-type`: 指定输出格式，可选 `csv` 或 `json`（默认为 `csv`）。
+
+### 操作模式 (`-m, --mode`)
+*   `dec` (默认): 解密模式。对输入的哈希值进行破解。
+*   `enc`: 加密模式。对输入的明文进行哈希计算。
+*   `add`: 添加模式。将指定的字典和 Salt 添加到预计算数据库 (Pre-db)。
+*   `id`: 识别模式。识别输入哈希值的可能算法类型。
 
 ### 缓存构建与字典管理
-*   `-d, --dec-dicts`: 指定自定义字典文件路径或直接输入字典字符串，用于生成明文字典的hash缓存。
-*   `-s, --dec-secrets`: 指定 Salt 字符串或包含 Salt 的文件路径（默认为 "66666"），用于生成明文字典+salt字典的hash缓存。
-*   `-w, --workers`: 指定生成缓存时的并发工作线程数（默认为 0，自动适配）。
-*   `-R, --rec`: 清空缓存目录下的所有文件，使用后需要重新生成缓存。
-*   `-D, --dec`: 对hash预计算缓存文件进行去重整理。
+*   `-d, --used-dicts`: 指定自定义字典文件路径或直接输入字典字符串。
+    *   在 `add` 模式下：用于生成预计算数据。
+    *   在 `dec` 模式下：作为动态破解的字典源。
+*   `-s, --used-secrets`: 指定 Salt 字符串或包含 Salt 的文件路径。
+    *   在 `add` 模式下：与字典组合生成带 Salt 的哈希预计算数据。
+    *   在 `dec` 模式下：作为动态破解的 Salt 字典。
+    *   在 `enc` 模式下：作为加密用的 Salt。
+*   `-w, --workers`: 指定并发工作线程数（默认为 0，自动适配 CPU 核心数）。
+*   `-C, --rec`: 清空缓存目录下的所有文件（慎用）。
+*   `-D, --dec`: 对 hash 预计算缓存文件进行去重整理。
+*   `-N, --no-hash-cache`: 禁用运行时哈希缓存，不读取也不写入动态缓存。
 
 ### 算法控制
-*   `-a, --algos`: 指定使用的哈希算法关键字（例如 `md5`, `sha1`, `bcrypt`）。支持部分匹配，会自动匹配包含指定关键字的所有算法。如果不指定，默认使用所有可用算法解密。
+*   `-a, --algos`: 指定使用的哈希算法关键字（例如 `md5`, `sha1`, `bcrypt`）。支持部分匹配，会自动匹配包含指定关键字的所有算法。如果不指定，默认使用所有可用算法。
 *   `-L, --list`: 列出当前支持的所有哈希算法。
 
-
-### 加密模式
-*   `--et, --encrypt-text`: 输入要加密的明文，或包含明文的文件路径（每行一个）。
-*   `--es, --encrypt-salt`: 输入加密时使用的 Salt，或包含 Salt 的文件路径（每行一个）。
-
 ### 其他选项
-*   `--data-dir`: 指定工具的数据存储目录（默认 `~/.decipher`）。
+*   `--predb-dir`: 指定预计算数据库存储目录（默认 `~/.decipher`）。
+*   `--run-cache-dir`: 指定运行时动态缓存目录（默认 `decipher_cache`）。
+*   `--failure-cache`: 指定解密失败记录文件（默认 `decipher.failure.csv`）。
+*   `--concat-symbol`: 指定哈希部分的连接符（默认 `:`）。
 *   `--ll`: 设置日志级别 (debug, info, warn, error)，默认 `info`。
 *   `--lf`: 指定日志输出文件路径。
 *   `--lcf`: 控制台日志格式，可选 T(时间)/L(级别)/C(调用处)/F(函数)/M(消息)，默认 `LM`。
@@ -184,15 +125,15 @@ decipher 的核心原理是**彩虹版碰撞 + 实时hash计算 + 可逆算法�
 ## 4. 使用示例
 
 ### 1. 初始化缓存（首次使用推荐）
-使用内置字典生成缓存：
+使用内置字典生成缓存（add 模式）：
 ```bash
-./decipher -d
+./decipher -m add -d builtin
 ```
 
-### 2. 添加自定义字典
-将 `my_passwords.txt` 中的密码，并使用salt=666 来进行hash预计算并加入缓存：
+### 2. 添加自定义字典到预计算库
+将 `my_passwords.txt` 中的密码，并使用 salt=666 进行 hash 预计算并加入缓存：
 ```bash
-./decipher -d ./my_passwords.txt -s 666
+./decipher -m add -d ./my_passwords.txt -s 666
 ```
 
 ### 3. 单个哈希解密
@@ -206,37 +147,51 @@ decipher 的核心原理是**彩虹版碰撞 + 实时hash计算 + 可逆算法�
 ./decipher -i ./hashes.txt -o ./result.csv
 ```
 
-### 5. 指定算法解密 当前使用关键字模糊匹配
+### 5. 指定算法解密
 只使用 MD5 算法进行解密：
 ```bash
 ./decipher -i e10adc3949ba59abbe56e057f20f883e -a md5
 ```
 
 ### 6. 使用动态算法解密
-使用 bcrypt 动态算法进行解密（注意：动态算法只在静态算法解密失败后执行）：
+使用 bcrypt 动态算法进行解密（注意：动态算法只在静态算法解密失败后执行，或明确指定时执行）：
 ```bash
 ./decipher -i <bcrypt_hash> -a bcrypt -d ./custom_dict.txt
-```
-
-同时使用静态和动态算法进行解密：
-```bash
-./decipher -i <hash> -a md5,bcrypt -d ./custom_dict.txt
 ```
 
 ### 7. 加密模式
 使用 MD5 算法加密明文 "123456"：
 ```bash
-./decipher --et 123456 -a md5
+./decipher -m enc -i 123456 -a md5
 ```
 
-### 8. 加密模式 使用多个算法加密明文 "password" 并添加 Salt "salt123"：
+### 8. 带 Salt 加密
+使用多个算法加密明文 "password" 并添加 Salt "salt123"：
 ```bash
-./decipher --et password --es salt123 -a md5,sha1,sha256
+./decipher -m enc -i password -s salt123 -a md5,sha1,sha256
 ```
 
-### 9. 动态破解示例
-使用自定义字典和动态算法进行解密：
+### 9. 哈希识别
+识别哈希值的可能算法：
 ```bash
-./decipher -i <bcrypt_hash> -a bcrypt -d ./custom_dict.txt
+./decipher -m id -i e10adc3949ba59abbe56e057f20f883e
 ```
+
+### 10. 导出结果为 JSON
+```bash
+./decipher -i ./hashes.txt -o ./result.json -O json
+```
+
+## 5. 开发与贡献
+
+### 核心优化点 (Recent Improvements)
+*   **Identify 接口**: 实现了基于 Hash 指纹的算法预筛选，避免了对不匹配算法的无效调用。
+*   **NeedSalt 接口**: 实现了对不需要 Salt 的算法（如 MD5 原生）的智能跳过，避免了由 Salt 列表引起的冗余计算。
+*   **策略预计算**: 在 `hash_cracker.go` 中引入 `CrackStrategy`，将复杂的判断逻辑移出热点循环，提升了核心破解路径的执行效率。
+*   **文件级过滤**: 在 `predb_cracker.go` 中实现了基于 `Identify` 的文件级跳过，大幅减少了无效 IO。
+
+### TODO
+1.  添加更智能的 Hash 识别功能，通过特征分析进一步缩小算法范围。
+2.  优化内存占用，支持流式处理超大规模 Salt 字典。
+3.  引入 Bloom Filter 优化预计算查询效率。
 

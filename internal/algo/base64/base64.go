@@ -1,6 +1,7 @@
 package base64
 
 import (
+	"decipher/internal/ident"
 	"encoding/base64"
 
 	"decipher/internal/algo/types"
@@ -12,6 +13,10 @@ func (a *Base64Algo) Name() string { return "base64" }
 
 func (a *Base64Algo) GetAlgoType() types.AlgoType {
 	return types.AlgoIsEncrypt
+}
+
+func (a *Base64Algo) NeedSalt() bool {
+	return false
 }
 
 func (a *Base64Algo) NeedAddToPredb() bool {
@@ -33,4 +38,8 @@ func (a *Base64Algo) Recover(token, secret, candidatePlain string) (string, erro
 	}
 
 	return string(decoded), nil
+}
+
+func (a *Base64Algo) Identify(token string) bool {
+	return ident.IsValidBase64Str(token)
 }

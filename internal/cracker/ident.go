@@ -1,0 +1,36 @@
+package cracker
+
+import (
+	"decipher/internal/algo"
+	"github.com/winezer0/xutils/utils"
+)
+
+func (e *Engine) RunIdentHash(hashFiles []string) []IdentResult {
+	var identResults []IdentResult
+
+	// 解析hash目标格式
+	targets := ParseFilesToTargets(hashFiles)
+	for _, target := range targets {
+		hash := target.Hash
+
+		var matched []string
+		for _, a := range algo.GetAllAlgorithms() {
+			if a.Identify(hash) {
+				matched = append(matched, a.Name())
+			}
+		}
+
+		if len(matched) == 0 {
+			matched = []string{}
+		} else {
+			matched = utils.SortSlice(matched)
+		}
+
+		identResult := IdentResult{
+			Hash:       hash,
+			AlgosNames: matched,
+		}
+		identResults = append(identResults, identResult)
+	}
+	return identResults
+}

@@ -1,6 +1,8 @@
 package bcrypt
 
 import (
+	"decipher/internal/ident"
+
 	"golang.org/x/crypto/bcrypt"
 
 	"decipher/internal/algo/types"
@@ -13,6 +15,8 @@ func (a *BcryptPassSaltAlgo) Name() string { return "bcrypt_pass_salt" }
 func (a *BcryptPassSaltAlgo) GetAlgoType() types.AlgoType {
 	return types.AlgoIsDynamic
 }
+
+func (a *BcryptPassSaltAlgo) NeedSalt() bool { return true }
 
 func (a *BcryptPassSaltAlgo) NeedAddToPredb() bool {
 	return false
@@ -45,4 +49,8 @@ func (a *BcryptPassSaltAlgo) Recover(token, secret, candidatePlain string) (stri
 		return candidatePlain, nil
 	}
 	return "", types.ErrVerificationFailed
+}
+
+func (a *BcryptPassSaltAlgo) Identify(token string) bool {
+	return ident.IsValidBcryptStr(token)
 }

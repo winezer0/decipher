@@ -2,6 +2,7 @@ package cracker
 
 import (
 	"decipher/internal/algo"
+	"decipher/internal/embeds"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -22,7 +23,12 @@ const (
 	PredbSuffix              = "predb"
 	PredbFileFormat          = "cache_%s.predb"
 	SuccessCache             = "success.cache"
-	ConcatSymbol             = ":" // 设置hash信息之间的链接字符串
+	BuiltinPlain             = "builtin-plain.txt"
+	BuiltinSalt              = "builtin-salt.txt"
+)
+
+var (
+	ConcatSymbol = ":" // 设置hash信息之间的链接字符串
 )
 
 type Engine struct {
@@ -35,15 +41,21 @@ func NewEngine(workers int, cacheDir string, runCache string) *Engine {
 	if workers <= 0 {
 		workers = runtime.NumCPU()
 	}
-	return &Engine{
+
+	engine := &Engine{
 		workers:     workers,
 		PredbDir:    cacheDir,
 		RunCacheDir: runCache,
 	}
+
+	// 初始化内置文件字典
+	engine.InitBuiltinDicts()
+
+	return engine
 }
 
-// GetAlgoCacheFilePath 获取算法对应的缓存文件路径
-func (e *Engine) GetAlgoCacheFilePath(alg algo.Algorithm) string {
+// GetAlgoPredbPath 获取算法对应的缓存文件路径
+func (e *Engine) GetAlgoPredbPath(alg algo.Algorithm) string {
 	return filepath.Join(e.PredbDir, fmt.Sprintf("cache_%s.%s", alg.Name(), PredbSuffix))
 }
 
@@ -62,23 +74,6 @@ func (e *Engine) IsEmptyPredbDir() bool {
 	return true
 }
 
-// CreatePredbWithCheck 检查并初始化预计算hash缓存
-func (e *Engine) CreatePredbWithCheck(preDbAlgos []algo.Algorithm, useDicts []string, useSecrets []string) error {
-	if e.IsEmptyPredbDir() {
-		logging.Warnf("cache dir %s is empty, generating cachedb %s ...", e, algo.GetAlgorithmNames(preDbAlgos))
-		e.CreatePredb(useDicts, useSecrets, preDbAlgos)
-	} else {
-		for _, alg := range preDbAlgos {
-			cacheFile := e.GetAlgoCacheFilePath(alg)
-			if !utils.FileExists(cacheFile) {
-				logging.Warnf("cachedb for %s not found, generating ...", alg.Name())
-				e.CreatePredb(useDicts, useSecrets, []algo.Algorithm{alg})
-			}
-		}
-	}
-	return nil
-}
-
 // GetSuccessCachePath 获取程序对应的成功结果缓存记录
 func (e *Engine) GetSuccessCachePath() string {
 	return filepath.Join(e.PredbDir, SuccessCache)
@@ -95,4 +90,26 @@ func (e *Engine) GetRuntimeCachePath(hash string, algos []algo.Algorithm) string
 	name := fmt.Sprintf("%s.%s.cache", hashutils.GetStrHashShort(hash), alogsHash)
 	cachePath := filepath.Join(e.RunCacheDir, name)
 	return cachePath
+}
+
+func (e *Engine) GetBuiltinPlainPath() string {
+	return filepath.Join(e.PredbDir, BuiltinPlain)
+}
+
+func (e *Engine) GetBuiltinSaltPath() string {
+	return filepath.Join(e.PredbDir, BuiltinSalt)
+}
+
+func (e *Engine) InitBuiltinDicts() {
+	if !utils.FileExists(e.GetBuiltinPlainPath()) {
+		if err := embeds.WriteEmbedToFile(e.GetBuiltinPlainPath(), embeds.GetBuiltinPlainsDict()); err != nil {
+			logging.Errorf("Failed to write builtin plain dict to file %s error: %v", e.GetBuiltinPlainPath(), err)
+		}
+	}
+
+	if !utils.FileExists(e.GetBuiltinSaltPath()) {
+		if err := embeds.WriteEmbedToFile(e.GetBuiltinSaltPath(), embeds.GetBuiltinSaltsDict()); err != nil {
+			logging.Errorf("Failed to write builtin salt dict to file %s error: %v", e.GetBuiltinSaltPath(), err)
+		}
+	}
 }

@@ -10,6 +10,12 @@ type Algorithm interface {
 	// GetAlgoType 返回算法类型，决定调用者如何处理结果
 	GetAlgoType() types.AlgoType
 
+	// NeedSalt
+	// 作用：声明该算法在运行时是否需要外部 secret
+	// 说明：Hash 场景下 secret 代表 Salt；Encrypt 场景下 secret 代表 Key
+	// 返回: 需要则返回 true，不需要返回 false
+	NeedSalt() bool
+
 	// Seal
 	// 作用：生成密文或哈希值
 	// 参数说明:
@@ -41,4 +47,10 @@ type Algorithm interface {
 	// 返回 false: 告诉系统"不需要/不适合建缓存"（如 bcrypt 这种动态 hash，或 base64 这种编码）
 	// 注意: 即使返回 false，用户仍可手动指定为 true 启用缓存功能
 	NeedAddToPredb() bool
+
+	// Identify
+	// 作用：判断该token是否可能属于本算法，只有对属于本算法的字符串才应该使用本算法进行解密
+	// 返回 true: 密文疑似本算法
+	// 返回 false: 密文不是本算法
+	Identify(token string) bool
 }

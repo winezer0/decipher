@@ -3,6 +3,7 @@ package mysql
 import (
 	"crypto/sha1"
 	"decipher/internal/algo/types"
+	"decipher/internal/ident"
 	"encoding/hex"
 )
 
@@ -11,6 +12,8 @@ type MySQL5Algo struct{}
 func (a *MySQL5Algo) Name() string { return "mysql5" }
 
 func (a *MySQL5Algo) GetAlgoType() types.AlgoType { return types.AlgoIsStatic }
+
+func (a *MySQL5Algo) NeedSalt() bool { return false }
 
 func (a *MySQL5Algo) Seal(plaintext, secret string) (string, error) {
 	h := sha1.New()
@@ -36,3 +39,10 @@ func (a *MySQL5Algo) Recover(token, secret, candidatePlain string) (string, erro
 }
 
 func (a *MySQL5Algo) NeedAddToPredb() bool { return true }
+
+func (a *MySQL5Algo) Identify(token string) bool {
+	//MySQL 5.x（包括 5.0/5.1/5.5/5.6/5.7 等）默认使用 SHA1 算法存储密码哈希：
+	//原始哈希是 20 字节二进制数据（SHA1 算法的标准输出）；
+	//转为十六进制字符串后，长度固定为 20×2=40位（1 字节 = 2 位十六进制）；
+	return ident.IsHashStringWithLen(token, 40)
+}

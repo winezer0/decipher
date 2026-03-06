@@ -1,6 +1,7 @@
 package md5
 
 import (
+	"decipher/internal/ident"
 	"encoding/hex"
 
 	"decipher/internal/algo/types"
@@ -11,6 +12,8 @@ type MD5PassSaltHexAlgo struct{}
 func (a *MD5PassSaltHexAlgo) Name() string { return "md5($pass.$salt)_hex" }
 
 func (a *MD5PassSaltHexAlgo) GetAlgoType() types.AlgoType { return types.AlgoIsStatic }
+
+func (a *MD5PassSaltHexAlgo) NeedSalt() bool { return true }
 
 func (a *MD5PassSaltHexAlgo) Seal(plaintext, secret string) (string, error) {
 	// 对salt进行hex解码，只取前4个字符
@@ -34,3 +37,7 @@ func (a *MD5PassSaltHexAlgo) Recover(token, secret, candidatePlain string) (stri
 }
 
 func (a *MD5PassSaltHexAlgo) NeedAddToPredb() bool { return true }
+
+func (a *MD5PassSaltHexAlgo) Identify(token string) bool {
+	return ident.IsHashStringWithLen(token, 32)
+}

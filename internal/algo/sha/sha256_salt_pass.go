@@ -2,6 +2,7 @@ package sha
 
 import (
 	"decipher/internal/algo/types"
+	"decipher/internal/ident"
 )
 
 type SHA256SaltPassAlgo struct{}
@@ -9,6 +10,8 @@ type SHA256SaltPassAlgo struct{}
 func (a *SHA256SaltPassAlgo) Name() string { return "sha256($salt.$pass)" }
 
 func (a *SHA256SaltPassAlgo) GetAlgoType() types.AlgoType { return types.AlgoIsStatic }
+
+func (a *SHA256SaltPassAlgo) NeedSalt() bool { return true }
 
 func (a *SHA256SaltPassAlgo) Seal(plaintext, secret string) (string, error) {
 	return sha256Hex(secret + plaintext), nil
@@ -23,3 +26,7 @@ func (a *SHA256SaltPassAlgo) Recover(token, secret, candidatePlain string) (stri
 }
 
 func (a *SHA256SaltPassAlgo) NeedAddToPredb() bool { return true }
+
+func (a *SHA256SaltPassAlgo) Identify(token string) bool {
+	return ident.IsHashStringWithLen(token, 64)
+}

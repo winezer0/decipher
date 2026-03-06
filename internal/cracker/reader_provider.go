@@ -15,11 +15,11 @@ type dictSource struct {
 	Provider dictReaderProvider
 }
 
-func InitDictSources(plainDicts []string) []dictSource {
+func InitDictProvider(dicts []string) []dictSource {
 	// 将字典转换为合适的类型
 	var sources []dictSource
-	if len(plainDicts) > 0 {
-		for _, d := range plainDicts {
+	if len(dicts) > 0 {
+		for _, d := range dicts {
 			dbPath := d
 			sources = append(sources, dictSource{
 				Name: dbPath,

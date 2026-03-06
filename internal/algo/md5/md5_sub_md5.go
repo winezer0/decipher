@@ -2,6 +2,7 @@ package md5
 
 import (
 	"decipher/internal/algo/types"
+	"decipher/internal/ident"
 )
 
 type MD5SubAlgo struct{}
@@ -9,6 +10,8 @@ type MD5SubAlgo struct{}
 func (a *MD5SubAlgo) Name() string { return "md5(substring(md5($pass),8,16))" }
 
 func (a *MD5SubAlgo) GetAlgoType() types.AlgoType { return types.AlgoIsStatic }
+
+func (a *MD5SubAlgo) NeedSalt() bool { return false }
 
 func (a *MD5SubAlgo) Seal(plaintext, secret string) (string, error) {
 	m1 := md5Hex(plaintext)
@@ -28,3 +31,7 @@ func (a *MD5SubAlgo) Recover(token, secret, candidatePlain string) (string, erro
 }
 
 func (a *MD5SubAlgo) NeedAddToPredb() bool { return true }
+
+func (a *MD5SubAlgo) Identify(token string) bool {
+	return ident.IsHashStringWithLen(token, 32)
+}

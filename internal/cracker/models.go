@@ -19,6 +19,11 @@ type CrackerResult struct {
 	Salt      string `json:"salt"`      // 盐值
 }
 
+type IdentResult struct {
+	Hash       string   `json:"hash"`
+	AlgosNames []string `json:"algos_names"`
+}
+
 func (res *CrackerResult) CalcHash() string {
 	lower := strings.ToLower(HashStringFormat(res.Hash))
 	element := []string{lower, res.Algorithm, res.Salt, res.Plaintext}
@@ -40,7 +45,7 @@ func RecoverKeywords(value string) (algo, plain, salt string) {
 	return "", "", ""
 }
 
-func CopyTargets(raws map[string]HashSaltTarget) []HashSaltTarget {
+func LoadTargetsFromMap(raws map[string]HashSaltTarget) []HashSaltTarget {
 	var news []HashSaltTarget
 	for _, t := range raws {
 		news = append(news, t)

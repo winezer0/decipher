@@ -33,6 +33,9 @@ func (e *Engine) RunPredbCrack(targets []HashSaltTarget, selectedAlgos []algo.Al
 		return allResults
 	}
 
+	// 1. 构建共享 TargetMap
+	targetMap := BuildTargetMap(targets)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -40,44 +43,59 @@ func (e *Engine) RunPredbCrack(targets []HashSaltTarget, selectedAlgos []algo.Al
 	startTime := time.Now()
 	var wg sync.WaitGroup
 
+	// 3. 限制并发文件打开数
+	// 使用 semaphore 限制并发数，防止 too many open files
+	// 默认限制为 64，或者可以使用 e.workers 如果它被用于此目的
+	concurrency := 64
+	if e.workers > 0 {
+		concurrency = e.workers
+	}
+	sem := make(chan struct{}, concurrency)
+
 	cacheFiles, err := os.ReadDir(e.PredbDir)
 	if err != nil {
 		logging.Errorf("Failed to read cache directory: %v", err)
 		return allResults
 	}
 
-	for _, cacheFile := range cacheFiles {
-		if cacheFile.IsDir() || !strings.HasPrefix(cacheFile.Name(), PredbPrefix) || !strings.HasSuffix(cacheFile.Name(), PredbSuffix) {
-			continue
-		}
-
-		algoName := getAlgoNameFromCacheFile(cacheFile)
-		if !utils.StringHasOneKey(algoName, selectedAlgoNames, true) {
-			continue
-		}
-
-		// 获取算法类型
-		algoType := types.AlgoIsStatic
-		if alg := algo.GetAlgorithmByName(algoName); alg != nil {
-			algoType = alg.GetAlgoType()
-		}
-
-		cacheDbPath := filepath.Join(e.PredbDir, cacheFile.Name())
-		fobj, err := os.Open(cacheDbPath)
-		if err != nil {
-			logging.Errorf("Failed to open cache file %s: %v", cacheDbPath, err)
-			continue
-		}
-
-		wg.Add(1)
-		go func(f *os.File, aName string, aType types.AlgoType) {
-			defer wg.Done()
-			defer f.Close()
-			e.PredbCrack(ctx, targets, f, crackerResults, aName, aType)
-		}(fobj, algoName, algoType)
-	}
-
 	go func() {
+		for _, cacheFile := range cacheFiles {
+			if cacheFile.IsDir() || !strings.HasPrefix(cacheFile.Name(), PredbPrefix) || !strings.HasSuffix(cacheFile.Name(), PredbSuffix) {
+				continue
+			}
+
+			algoName := getAlgoNameFromCacheFile(cacheFile)
+			if !utils.StringHasOneKey(algoName, selectedAlgoNames, true) {
+				continue
+			}
+
+			alg := algo.GetAlgorithmByName(algoName)
+			if alg == nil {
+				continue
+			}
+
+			// 获取算法类型
+			algoType := alg.GetAlgoType()
+
+			// 获取信号量，限制并发
+			sem <- struct{}{}
+			wg.Add(1)
+			go func(cFile os.DirEntry, aName string, aType types.AlgoType) {
+				defer wg.Done()
+				defer func() { <-sem }() // 释放信号量
+
+				cacheDbPath := filepath.Join(e.PredbDir, cFile.Name())
+				fobj, err := os.Open(cacheDbPath)
+				if err != nil {
+					logging.Errorf("Failed to open cache file %s: %v", cacheDbPath, err)
+					return
+				}
+				defer fobj.Close()
+
+				e.PredbCrack(ctx, targetMap, fobj, crackerResults, aName, aType)
+			}(cacheFile, algoName, algoType)
+		}
+
 		wg.Wait()
 		close(crackerResults)
 	}()
@@ -102,32 +120,25 @@ func (e *Engine) RunPredbCrack(targets []HashSaltTarget, selectedAlgos []algo.Al
 	return allResults
 }
 
-func (e *Engine) PredbCrack(ctx context.Context, targets []HashSaltTarget, dict io.Reader, results chan<- CrackerResult, algoName string, algoType types.AlgoType) {
-	targetMap := make(map[string][]HashSaltTarget)
-	for _, t := range targets {
-		hash := HashStringFormat(t.Hash)
-		targetMap[hash] = append(targetMap[hash], t)
-	}
-
+func (e *Engine) PredbCrack(ctx context.Context, targetMap map[string][]HashSaltTarget, dict io.Reader, results chan<- CrackerResult, algoName string, algoType types.AlgoType) {
 	scanner := bufio.NewScanner(dict)
 	for scanner.Scan() {
 		line := scanner.Text()
-		parts := strings.SplitN(line, ConcatSymbol, 3)
-		var hash, salt, plain string
-		if len(parts) == 0 {
+
+		// 快速检查：只解析 Hash 部分，避免全行解析的开销
+		idx := strings.Index(line, ConcatSymbol)
+		if idx == -1 {
 			continue
 		}
-		if len(parts) > 0 {
-			hash = parts[0]
-		}
-		if len(parts) > 1 {
-			salt = parts[1]
-		}
-		if len(parts) > 2 {
-			plain = parts[2]
-		}
+		hash := line[:idx]
 
 		if matchedTargets, ok := targetMap[hash]; ok {
+			// 只有命中目标时才进行完整解析
+			_, salt, plain, err := ParseHashLine(line, ConcatSymbol)
+			if err != nil {
+				continue
+			}
+
 			for _, matchedTarget := range matchedTargets {
 				result := CrackerResult{
 					Hash:      matchedTarget.Hash,

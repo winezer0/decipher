@@ -2,6 +2,7 @@ package md5
 
 import (
 	"crypto/md5"
+	"decipher/internal/ident"
 	"encoding/hex"
 	"io"
 
@@ -16,6 +17,8 @@ func (a *MD5Algo) Name() string { return "md5" }
 func (a *MD5Algo) GetAlgoType() types.AlgoType {
 	return types.AlgoIsStatic
 }
+
+func (a *MD5Algo) NeedSalt() bool { return false }
 
 func (a *MD5Algo) NeedAddToPredb() bool {
 	return true
@@ -52,4 +55,8 @@ func md5Hex(s string) string {
 	h := md5.New()
 	io.WriteString(h, s)
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+func (a *MD5Algo) Identify(token string) bool {
+	return ident.IsHashStringWithLen(token, 32)
 }

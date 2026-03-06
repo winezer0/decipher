@@ -18,12 +18,13 @@ func TestPredbCrack(t *testing.T) {
 		targets := []HashSaltTarget{
 			{Hash: "mock(password)", Salt: ""},
 		}
+		targetMap := BuildTargetMap(targets)
 		results := make(chan CrackerResult, 1)
 		ctx := context.Background()
 
 		engine := NewEngine(0, "", "")
 		go func() {
-			engine.PredbCrack(ctx, targets, reader, results, "mock", "static")
+			engine.PredbCrack(ctx, targetMap, reader, results, "mock", "static")
 			close(results)
 		}()
 
@@ -45,12 +46,13 @@ func TestPredbCrack(t *testing.T) {
 		targets := []HashSaltTarget{
 			{Hash: "mock(unknown)", Salt: ""},
 		}
+		targetMap := BuildTargetMap(targets)
 		results := make(chan CrackerResult, 1)
 		ctx := context.Background()
 
 		engine := NewEngine(0, "", "")
 		go func() {
-			engine.PredbCrack(ctx, targets, reader, results, "mock", "static")
+			engine.PredbCrack(ctx, targetMap, reader, results, "mock", "static")
 			close(results)
 		}()
 
@@ -68,12 +70,13 @@ func TestPredbCrack(t *testing.T) {
 		targets := []HashSaltTarget{
 			{Hash: "mock(password)", Salt: ""},
 		}
+		targetMap := BuildTargetMap(targets)
 		results := make(chan CrackerResult, 1)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
 		engine := NewEngine(0, "", "")
-		engine.PredbCrack(ctx, targets, reader, results, "mock", "static")
+		engine.PredbCrack(ctx, targetMap, reader, results, "mock", "static")
 	})
 
 	t.Run("HashWithSalt", func(t *testing.T) {
@@ -82,12 +85,13 @@ func TestPredbCrack(t *testing.T) {
 		targets := []HashSaltTarget{
 			{Hash: "hash123", Salt: "mysalt"},
 		}
+		targetMap := BuildTargetMap(targets)
 		results := make(chan CrackerResult, 1)
 		ctx := context.Background()
 
 		engine := NewEngine(0, "", "")
 		go func() {
-			engine.PredbCrack(ctx, targets, reader, results, "mock", "static")
+			engine.PredbCrack(ctx, targetMap, reader, results, "mock", "static")
 			close(results)
 		}()
 
@@ -110,12 +114,13 @@ func TestPredbCrack(t *testing.T) {
 			{Hash: "hash1", Salt: ""},
 			{Hash: "hash1", Salt: "salt2"},
 		}
+		targetMap := BuildTargetMap(targets)
 		results := make(chan CrackerResult, 2)
 		ctx := context.Background()
 
 		engine := NewEngine(0, "", "")
 		go func() {
-			engine.PredbCrack(ctx, targets, reader, results, "mock", "static")
+			engine.PredbCrack(ctx, targetMap, reader, results, "mock", "static")
 			close(results)
 		}()
 

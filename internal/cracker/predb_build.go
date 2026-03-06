@@ -29,77 +29,52 @@ func (e *Engine) CreatePredb(plainDicts []string, secretDicts []string, selectAl
 		selectAlgos = algo.GetAllAlgorithms()
 	}
 
-	preDBAlgos := algo.FilterNeedAddToPredbAlogs(selectAlgos)
+	// 过滤静态算法和需要进行predb生成的算法
+	preDBAlgos := algo.FilterNeedAddToPredbAlogs(algo.FilterStaticAlgorithms(selectAlgos))
 	if len(preDBAlgos) == 0 {
-		return fmt.Errorf("No algos that need pre-computation to generate pre-db")
+		return fmt.Errorf("no algos that need pre-computation to generate pre-db")
 	}
-	logging.Infof("current predb algos (%d) to be used: %v", len(preDBAlgos), algo.GetAlgorithmNames(preDBAlgos))
+	logging.Infof("current predb algos (%d) to be used", len(preDBAlgos))
 
 	if err := utils.EnsureDir(e.PredbDir, false); err != nil {
-		return fmt.Errorf("Failed to create cache directory %s: %v", e.PredbDir, err)
+		return fmt.Errorf("failed to create cache directory %s: %v", e.PredbDir, err)
 	}
 
-	// 读取盐值列表（支持文件或字符串），如果为空则使用空盐兜底
-	salts := ParseFilesToStrings(secretDicts, true)
-	if len(salts) == 0 {
-		logging.Warnf("no valid data was obtained, used empty salt: %v", secretDicts)
-		salts = []string{""}
-	}
+	// 初始化盐值提供者（支持文件、生成器等）
+	var saltProvider SaltProvider
+	providers := InitSaltProviders(secretDicts)
+	saltProvider = NewMultiSaltProvider(providers)
 
-	// 读取明文字典（支持文件或字符串），为空则使用内置字典
-	plains := ParseFilesToStrings(plainDicts, true)
-	if len(plains) == 0 {
-		logging.Warnf("no valid data was obtained, used builtin plain: %v", secretDicts)
-		plains = loadBuiltinPlainsEntries()
-	}
-
-	// 使用内存中的明文切片进行并发预计算
-	e.genPredbConcurrency(preDBAlgos, plains, salts)
+	// 使用流式批处理进行并发预计算
+	e.genPredbConcurrency(preDBAlgos, plainDicts, saltProvider)
 
 	return nil
 }
 
 // genPredbConcurrency 并发生成缓存条目
-//
-// 参数:
-// - algos: 需要处理的算法列表
-// - plains: 明文条目切片，已清理空白
-// - salts: 盐值列表（可能为空串作为兜底）
-func (e *Engine) genPredbConcurrency(algos []algo.Algorithm, plains []string, salts []string) {
-	plainsChan := make(chan string, e.workers*2)
-	resultsChan := make(chan predbRes, e.workers*10)
-
-	var wg sync.WaitGroup
-
-	for i := 0; i < e.workers; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for line := range plainsChan {
-				for _, alg := range algos {
-					for _, salt := range salts {
-						hash, err := alg.Seal(line, salt)
-						if err != nil {
-							continue
-						}
-						resultsChan <- predbRes{
-							algo:  alg.Name(),
-							hash:  hash,
-							salt:  salt,
-							plain: line,
-						}
-					}
-				}
-			}
-		}()
+func (e *Engine) genPredbConcurrency(algos []algo.Algorithm, plainFiles []string, saltProvider SaltProvider) {
+	// 分离算法
+	var saltedAlgos []algo.Algorithm
+	var unsaltedAlgos []algo.Algorithm
+	for _, alg := range algos {
+		if alg.NeedSalt() {
+			saltedAlgos = append(saltedAlgos, alg)
+		} else {
+			unsaltedAlgos = append(unsaltedAlgos, alg)
+		}
 	}
 
+	resultsChan := make(chan predbRes, e.workers*10)
+
+	// 启动写入器
 	writerDone := make(chan struct{})
 	go func() {
 		defer close(writerDone)
 		files := make(map[string]*os.File)
 		writers := make(map[string]*bufio.Writer)
 		counts := make(map[string]int)
+
+		// 预先打开文件
 		for _, alg := range algos {
 			algoName := alg.Name()
 			if _, ok := writers[algoName]; ok {
@@ -115,6 +90,7 @@ func (e *Engine) genPredbConcurrency(algos []algo.Algorithm, plains []string, sa
 			writers[algoName] = bufio.NewWriterSize(dbObj, 256*1024)
 			counts[algoName] = 0
 		}
+
 		defer func() {
 			for _, w := range writers {
 				w.Flush()
@@ -127,6 +103,7 @@ func (e *Engine) genPredbConcurrency(algos []algo.Algorithm, plains []string, sa
 		for res := range resultsChan {
 			w, ok := writers[res.algo]
 			if !ok {
+				// 理论上不应该走到这里，因为前面已经预打开了
 				fname := filepath.Join(e.PredbDir, fmt.Sprintf(PredbFileFormat, res.algo))
 				f, err := os.OpenFile(fname, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 				if err != nil {
@@ -139,7 +116,6 @@ func (e *Engine) genPredbConcurrency(algos []algo.Algorithm, plains []string, sa
 				counts[res.algo] = 0
 			}
 
-			// 定义存储密文格式
 			element := []string{HashStringFormat(res.hash), res.salt, res.plain}
 			entry := strings.Join(element, ConcatSymbol)
 			w.WriteString(entry + "\n")
@@ -150,24 +126,137 @@ func (e *Engine) genPredbConcurrency(algos []algo.Algorithm, plains []string, sa
 		}
 	}()
 
-	count := 0
 	startTime := time.Now()
-	for _, text := range plains {
-		text = strings.TrimSpace(text)
-		if text == "" {
-			continue
+
+	// 定义批处理函数
+	processBatch := func(plains []string) {
+		// 处理不需要盐的算法
+		if len(unsaltedAlgos) > 0 {
+			// logging.Infof("Processing batch unsalted algos with %d plains...", len(plains))
+			plainsChan := make(chan string, e.workers*2)
+			var uwg sync.WaitGroup
+
+			for i := 0; i < e.workers; i++ {
+				uwg.Add(1)
+				go func() {
+					defer uwg.Done()
+					for line := range plainsChan {
+						for _, alg := range unsaltedAlgos {
+							hash, err := alg.Seal(line, "")
+							if err == nil {
+								resultsChan <- predbRes{
+									algo:  alg.Name(),
+									hash:  hash,
+									salt:  "",
+									plain: line,
+								}
+							}
+						}
+					}
+				}()
+			}
+
+			// 发送明文
+			for _, p := range plains {
+				plainsChan <- p
+			}
+			close(plainsChan)
+			uwg.Wait()
 		}
-		plainsChan <- text
-		count++
-		if count%ProgressReportInterval == 0 {
-			logging.Infof("Processed %d lines...", count)
+
+		// 处理需要盐的算法
+		if len(saltedAlgos) > 0 {
+			// logging.Infof("Processing batch salted algos with salt provider...")
+			saltsChan := saltProvider.GenerateStream(nil)
+			var swg sync.WaitGroup
+
+			for i := 0; i < e.workers; i++ {
+				swg.Add(1)
+				go func() {
+					defer swg.Done()
+					for salt := range saltsChan {
+						for _, line := range plains {
+							for _, alg := range saltedAlgos {
+								hash, err := alg.Seal(line, salt)
+								if err == nil {
+									resultsChan <- predbRes{
+										algo:  alg.Name(),
+										hash:  hash,
+										salt:  salt,
+										plain: line,
+									}
+								}
+							}
+						}
+					}
+				}()
+			}
+			swg.Wait()
 		}
 	}
-	close(plainsChan)
 
-	wg.Wait()
+	// 流式读取明文文件并分批处理
+	batchSize := 10000
+	var plainBatch []string
+
+	for _, path := range plainFiles {
+		if !utils.FileExists(path) {
+			logging.Warnf("file not found: %s", path)
+			continue
+		}
+
+		f, err := os.Open(path)
+		if err != nil {
+			logging.Errorf("failed to open file %s: %v", path, err)
+			continue
+		}
+
+		logging.Infof("Processing plain file: %s", path)
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
+			if line != "" {
+				plainBatch = append(plainBatch, line)
+				if len(plainBatch) >= batchSize {
+					processBatch(plainBatch)
+					plainBatch = plainBatch[:0]
+				}
+			}
+		}
+		f.Close()
+	}
+
+	// 处理剩余的批次
+	if len(plainBatch) > 0 {
+		processBatch(plainBatch)
+	}
+
 	close(resultsChan)
 	<-writerDone
 
-	logging.Infof("Processed %d lines in %v", count, time.Since(startTime))
+	logging.Infof("Predb generation done in %v", time.Since(startTime))
+}
+
+// CreatePredbWithCheck 检查并初始化预计算hash缓存
+func (e *Engine) CreatePredbWithCheck(planDicts []string, secretDicts []string, preDbAlgos []algo.Algorithm) error {
+	if e.IsEmptyPredbDir() {
+		return e.CreatePredb(planDicts, secretDicts, preDbAlgos)
+	}
+
+	var errs []string
+	for _, alg := range preDbAlgos {
+		cacheFile := e.GetAlgoPredbPath(alg)
+		if !utils.FileExists(cacheFile) {
+			logging.Debugf("predb for %s not found, auto generating ...", alg.Name())
+			if err := e.CreatePredb(planDicts, secretDicts, []algo.Algorithm{alg}); err != nil {
+				logging.Errorf("create predb for %s error: %v", alg.Name(), err)
+				errs = append(errs, fmt.Sprintf("algos:%s -> error:%s", alg.Name(), err.Error()))
+			}
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("%s", strings.Join(errs, ";"))
+	}
+	return nil
 }

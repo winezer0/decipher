@@ -3,6 +3,7 @@ package bcrypt
 import (
 	"crypto/md5"
 	"decipher/internal/algo/types"
+	"decipher/internal/ident"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -12,6 +13,8 @@ type BcryptMd5Algo struct{}
 func (a *BcryptMd5Algo) Name() string { return "bcrypt_md5" }
 
 func (a *BcryptMd5Algo) GetAlgoType() types.AlgoType { return types.AlgoIsDynamic }
+
+func (a *BcryptMd5Algo) NeedSalt() bool { return false }
 
 func (a *BcryptMd5Algo) Seal(plaintext, secret string) (string, error) {
 	md5Hash := md5Sum(plaintext)
@@ -32,6 +35,10 @@ func (a *BcryptMd5Algo) Recover(token, secret, candidatePlain string) (string, e
 }
 
 func (a *BcryptMd5Algo) NeedAddToPredb() bool { return false }
+
+func (a *BcryptMd5Algo) Identify(token string) bool {
+	return ident.IsValidBcryptStr(token)
+}
 
 func md5Sum(plaintext string) string {
 	h := md5.New()

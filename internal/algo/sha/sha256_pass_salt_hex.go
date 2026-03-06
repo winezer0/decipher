@@ -1,6 +1,7 @@
 package sha
 
 import (
+	"decipher/internal/ident"
 	"encoding/hex"
 
 	"decipher/internal/algo/types"
@@ -11,6 +12,8 @@ type SHA256PassSaltHexAlgo struct{}
 func (a *SHA256PassSaltHexAlgo) Name() string { return "sha256($pass.$salt)_hex" }
 
 func (a *SHA256PassSaltHexAlgo) GetAlgoType() types.AlgoType { return types.AlgoIsStatic }
+
+func (a *SHA256PassSaltHexAlgo) NeedSalt() bool { return true }
 
 func (a *SHA256PassSaltHexAlgo) Seal(plaintext, secret string) (string, error) {
 	// 对salt进行hex解码，只取前4个字符
@@ -32,5 +35,8 @@ func (a *SHA256PassSaltHexAlgo) Recover(token, secret, candidatePlain string) (s
 	}
 	return "", types.ErrVerificationFailed
 }
-
 func (a *SHA256PassSaltHexAlgo) NeedAddToPredb() bool { return true }
+
+func (a *SHA256PassSaltHexAlgo) Identify(token string) bool {
+	return ident.IsHashStringWithLen(token, 64)
+}

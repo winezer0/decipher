@@ -30,12 +30,9 @@ func (e *Engine) RunDecrypt(targets []HashSaltTarget, secretDicts []string, decr
 		logging.Infof("  - %s", a.Name())
 	}
 
-	// 加载密钥源
-	secrets := ParseFilesToStrings(secretDicts, true)
-	// 如果没有提供密钥，尝试直接解密（对于不需要密钥的编码如 Base64）
-	if len(secrets) == 0 {
-		secrets = append(secrets, "")
-	}
+	// 加载密钥源 (使用 SaltProvider 流式处理)
+	saltProviders := InitSaltProviders(secretDicts)
+	// Calculate total count if possible (optional)
 
 	startTime := time.Now()
 	var mu sync.Mutex
@@ -58,9 +55,6 @@ func (e *Engine) RunDecrypt(targets []HashSaltTarget, secretDicts []string, decr
 			defer wg.Done()
 			for j := range jobs {
 				// 对于加密算法，调用 Recover 进行解密
-				// token: 密文
-				// secret: 密钥
-				// candidatePlain: 对于解密模式，此参数被忽略
 				plaintext, err := j.alg.Recover(j.target.Hash, j.secret, "")
 				if err == nil && plaintext != "" {
 					result := CrackerResult{
@@ -84,14 +78,30 @@ func (e *Engine) RunDecrypt(targets []HashSaltTarget, secretDicts []string, decr
 
 	// 生产任务
 	go func() {
+		defer close(jobs)
 		for _, target := range targets {
 			for _, alg := range decryptAlogs {
-				for _, secret := range secrets {
-					jobs <- job{target: target, secret: secret, alg: alg}
+				// 优化: 使用 Identify 过滤不适用的算法
+				if !alg.Identify(target.Hash) {
+					continue
+				}
+
+				if !alg.NeedSalt() {
+					jobs <- job{target: target, secret: "", alg: alg}
+					continue
+				}
+
+				// For salted algos, iterate providers
+				for _, provider := range saltProviders {
+					stop := make(chan struct{})
+					stream := provider.GenerateStream(stop)
+					for secret := range stream {
+						jobs <- job{target: target, secret: secret, alg: alg}
+					}
+					// Note: stop is not closed because we consume full stream
 				}
 			}
 		}
-		close(jobs)
 	}()
 
 	// 收集结果

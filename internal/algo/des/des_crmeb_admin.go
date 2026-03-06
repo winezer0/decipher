@@ -3,6 +3,7 @@ package des
 import (
 	"crypto/des"
 	"decipher/internal/algo/types"
+	"decipher/internal/ident"
 	"encoding/base64"
 )
 
@@ -11,6 +12,8 @@ type CrmebAdminAlgo struct{}
 func (a *CrmebAdminAlgo) Name() string { return "des_crmeb_admin" }
 
 func (a *CrmebAdminAlgo) GetAlgoType() types.AlgoType { return types.AlgoIsEncrypt }
+
+func (a *CrmebAdminAlgo) NeedSalt() bool { return true }
 
 func (a *CrmebAdminAlgo) Seal(plaintext, secret string) (string, error) {
 	if secret == "" {
@@ -110,4 +113,8 @@ func (a *CrmebAdminAlgo) prepareKey(secret string) []byte {
 func Decrypt(encryptedBase64, secret string) (string, error) {
 	algo := &CrmebAdminAlgo{}
 	return algo.Recover(encryptedBase64, secret, "")
+}
+
+func (a *CrmebAdminAlgo) Identify(token string) bool {
+	return ident.IsValidBase64Str(token)
 }

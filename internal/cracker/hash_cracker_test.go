@@ -15,6 +15,8 @@ func (m *mockDynamicSaltAlgo) Name() string { return "mockDynamicSalt" }
 
 func (m *mockDynamicSaltAlgo) GetAlgoType() types.AlgoType { return types.AlgoIsDynamic }
 
+func (m *mockDynamicSaltAlgo) NeedSalt() bool { return true }
+
 func (m *mockDynamicSaltAlgo) NeedAddToPredb() bool { return false }
 
 func (m *mockDynamicSaltAlgo) Seal(plaintext, secret string) (string, error) { return "", nil }
@@ -25,6 +27,7 @@ func (m *mockDynamicSaltAlgo) Recover(token, secret, candidatePlain string) (str
 	}
 	return "", types.ErrVerificationFailed
 }
+func (m *mockDynamicSaltAlgo) Identify(token string) bool { return true }
 
 func TestRunDynamicCrack_SupportSecretsFile(t *testing.T) {
 	tempDir := t.TempDir()

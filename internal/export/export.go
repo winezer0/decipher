@@ -12,8 +12,9 @@ import (
 
 // ExportCSV 将解密结果追加导出到 CSV 文件。
 // 如果文件不存在或为空，会自动写入表头；否则直接追加数据。
-func ExportCSV(filePath string, crackerResults []cracker.CrackerResult) error {
-	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func ExportCSV(filePath string, crackerResults []cracker.CrackerResult, overwrite bool) error {
+	flags := GetFileOpenMode(overwrite)
+	file, err := os.OpenFile(filePath, flags, 0644)
 	if err != nil {
 		return fmt.Errorf("打开文件失败: %w", err)
 	}
@@ -58,18 +59,30 @@ func ExportCSV(filePath string, crackerResults []cracker.CrackerResult) error {
 	return writer.Error()
 }
 
+func GetFileOpenMode(overwrite bool) int {
+	// 追加写模式：O_WRONLY(只写) + O_CREATE(不存在则创建) + O_APPEND(追加)
+	flags := os.O_APPEND | os.O_CREATE | os.O_WRONLY
+	if overwrite {
+		// 覆盖写模式：O_WRONLY(只写) + O_CREATE(不存在则创建) + O_TRUNC(存在则截断清空)
+		flags = os.O_CREATE | os.O_WRONLY | os.O_TRUNC
+	}
+	return flags
+}
+
 // ExportJSON 将数据导出到 JSON 文件
 func ExportJSON(filePath string, data interface{}) error {
 	return utils.SaveJSON(filePath, data)
 }
 
 // ExportFailureCSV 将解密失败的目标导出到 CSV 文件
-func ExportFailureCSV(filePath string, failedTargets map[string]cracker.HashSaltTarget) error {
+func ExportFailureCSV(filePath string, failedTargets map[string]cracker.HashSaltTarget, overwrite bool) error {
 	if len(failedTargets) == 0 {
 		return nil
 	}
 
-	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	flags := GetFileOpenMode(overwrite)
+	file, err := os.OpenFile(filePath, flags, 0644)
+	//file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return fmt.Errorf("打开文件失败: %w", err)
 	}
@@ -94,6 +107,43 @@ func ExportFailureCSV(filePath string, failedTargets map[string]cracker.HashSalt
 		record := []string{
 			t.Hash,
 			t.Salt,
+		}
+		if err := writer.Write(record); err != nil {
+			return fmt.Errorf("写入记录失败: %w", err)
+		}
+	}
+
+	writer.Flush()
+	return writer.Error()
+}
+
+func ExportIdentCSV(filePath string, idResults []cracker.IdentResult, overwrite bool) error {
+	flags := GetFileOpenMode(overwrite)
+	file, err := os.OpenFile(filePath, flags, 0644)
+	if err != nil {
+		return fmt.Errorf("打开文件失败: %w", err)
+	}
+	defer file.Close()
+
+	info, err := file.Stat()
+	if err != nil {
+		return fmt.Errorf("获取文件信息失败: %w", err)
+	}
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	if info.Size() == 0 {
+		header := []string{"hash", "algos_names"}
+		if err := writer.Write(header); err != nil {
+			return fmt.Errorf("写入表头失败: %w", err)
+		}
+	}
+
+	for _, r := range idResults {
+		record := []string{
+			r.Hash,
+			strings.Join(r.AlgosNames, "/"),
 		}
 		if err := writer.Write(record); err != nil {
 			return fmt.Errorf("写入记录失败: %w", err)

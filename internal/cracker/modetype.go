@@ -8,6 +8,7 @@ const (
 	ModeAdded   ModeType = "added"
 	ModeEncrypt ModeType = "encrypt"
 	ModeDecrypt ModeType = "decrypt"
+	ModeIdent   ModeType = "ident"
 )
 
 // ResolveMode 使用前缀匹配解析模式
@@ -33,5 +34,27 @@ func ResolveMode(input string) ModeType {
 	if strings.HasPrefix(key, "dec") {
 		return ModeDecrypt
 	}
+	if strings.HasPrefix(key, "id") {
+		return ModeIdent
+	}
 	return ModeDecrypt
+}
+
+// ParseModeTypes 接收字符串模式列表，返回解析后的ModeType列表
+func ParseModeTypes(modeStrings []string) []ModeType {
+	var modeTypes []ModeType
+	for _, m := range modeStrings {
+		modeTypes = append(modeTypes, ResolveMode(m))
+	}
+	return modeTypes
+}
+
+// HasMode 接收模式列表和目标模式，返回是否包含该模式
+func HasMode(modeTypes []ModeType, target ModeType) bool {
+	for _, m := range modeTypes {
+		if m == target {
+			return true
+		}
+	}
+	return false
 }

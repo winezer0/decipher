@@ -17,6 +17,8 @@ func (a *ScryptAlgo) Name() string { return "scrypt" }
 
 func (a *ScryptAlgo) GetAlgoType() types.AlgoType { return types.AlgoIsDynamic }
 
+func (a *ScryptAlgo) NeedSalt() bool { return true }
+
 func (a *ScryptAlgo) Seal(plaintext, secret string) (string, error) {
 	saltBytes := []byte(secret)
 	if len(saltBytes) == 0 {
@@ -124,4 +126,14 @@ func parseScryptHash(hash string) (*scryptParams, []byte, []byte, error) {
 	params.keyLen = len(expectedHash)
 
 	return params, salt, expectedHash, nil
+}
+
+func (a *ScryptAlgo) Identify(token string) bool {
+	if len(token) < 8 {
+		return false
+	}
+	if !strings.HasPrefix(token, "$scrypt$") {
+		return false
+	}
+	return true
 }

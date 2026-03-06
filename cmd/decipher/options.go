@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/winezer0/xutils/cmdutils"
@@ -15,22 +16,22 @@ import (
 
 const (
 	AppName      = "decipher"
-	AppVersion   = "0.0.4"
-	BuildDate    = "2026-03-06"
+	AppVersion   = "0.0.5"
+	BuildDate    = "2026-03-09"
 	AppShortDesc = "common hash fast cracker"
 	AppLongDesc  = "common hash fast cracker"
 )
 
 // Options 命令行参数结构体
 type Options struct {
-	Inputs []string `short:"i" long:"inputs" description:"Input hashes or file containing hashes (one per line)"`
+	Hashes []string `short:"i" long:"hashes" description:"hashes str or hashes files"`
 
 	// 操作模式 add 添加数据到predb/enc加密/dec解密/
-	Mode string `short:"m" long:"mode" description:"action mode" choices:"add,enc,dec" default:"dec"`
+	Mode []string `short:"m" long:"mode" description:"action mode" choices:"add,enc,dec,id" default:"dec"`
 
 	// 字典文件, 用于预计算predb/解密/加密的 明文字典和盐密钥文件，预计算predb时相同文件只会计算一次
-	UsedDicts   []string `short:"d" long:"used-dicts" description:"custom dicts, will add to pre-db and cracking dynamic hash"`
-	UsedSecrets []string `short:"s" long:"used-secrets" description:"custom secrets, will add to pre-db and cracking (hash salts or decrypt keys)"`
+	UsedPlains  []string `short:"d" long:"used-plains" description:"custom plains dict, will add to pre-db and cracking dynamic hash"`
+	UsedSecrets []string `short:"s" long:"used-secrets" description:"custom secrets dict, will add to pre-db and cracking (hash salts or decryptAction keys)"`
 	// 实际使用的算法，为空时使用所有算法
 	AlgoKeys []string `short:"a" long:"algos" description:"Keywords used for algos filtering (e.g. md5)"`
 
@@ -38,21 +39,26 @@ type Options struct {
 	Workers int `short:"w" long:"workers" description:"Number of concurrent workers for cache generation" default:"0"`
 
 	// 输出配置
-	Output     string `short:"o" long:"output" description:"Output CSV file for decrypted results"`
+	Output     string `short:"o" long:"output" description:"Output directory for decrypted results" default:"."`
 	OutputType string `short:"O" long:"output-type" description:"Output format" choices:"json,csv" default:"csv"`
 
 	// 其他配置
 	ListAlgos  bool `short:"L" long:"list" description:"List all available algorithms"`
-	ClearCache bool `short:"C" long:"rec" description:"Cleans cache dir all files"`
-	DedupPredb bool `short:"D" long:"dec" description:"Deduplicate all cache files"`
+	DedupPredb bool `short:"D" long:"dc" description:"Deduplicate all cache files"`
+	ClearCache bool `short:"C" long:"cc" description:"Cleans cache dir all files"`
+	RemoveTemp bool `short:"R" long:"rr" description:"Cleans dict str gen temp files"`
 
+	// 不使用本地缓存数据库进行破解
+	NoPredbCrack bool `long:"npc" description:"Disable hash cracking by predb found"`
+	NoDynaCrack  bool `long:"ndc" description:"Disable hash cracking by dynamic calc"`
 	// NohashCache 禁用哈希缓存，不进行缓存读写
-	NohashCache bool `short:"N" long:"no-hash-cache" description:"Disable hash cracking cache"`
+	NohashCache bool `ong:"nhc" description:"Disable hash cracking cache"`
 
 	// 缓存目录配置 一般不需要修改
-	PredbDir     string `long:"predb-dir" description:"Dir for store hash pre-db files" default:"~/.decipher"`
+	PredbDir     string `long:"predb-dir" description:"Dir for store hash pre-db files" default:"decipher_db"`
 	RunCacheDir  string `long:"run-cache-dir" description:"Dir for store dynaic hash cache files" default:"decipher_cache"`
 	FailureCache string `long:"failure-cache" description:"Hash record with decryption failure" default:"decipher.failure.csv"`
+	ConcatSymbol string `long:"concat-symbol" description:"Symbol for concat hash parts" default:":"`
 
 	Version       bool   `short:"v" long:"version" description:"display the program version and exit"`
 	LogLevel      string `long:"ll" description:"Log level (debug, info, warn, error)" default:"info"`
@@ -113,12 +119,11 @@ func InitOptionsArgs(minimumParams int) (*Options, *flags.Parser) {
 	cachePaths := []string{opts.PredbDir, opts.RunCacheDir, opts.FailureCache}
 
 	logging.Infof("%s data dirs: %v", AppName, cachePaths)
-	// ClearCache，清空缓存目录中的数据
+	// RemovePredb，清空目录中的数据
 	if opts.ClearCache {
 		logging.Infof("cleaning up cache and db dir: %v", cachePaths)
 		utils.ClearPaths(cachePaths, false, 0)
 		logging.Infof("cleanup cache and db success: %v", cachePaths)
-		os.Exit(0)
 	}
 
 	// 处理去重 (DedupPredb)
@@ -126,18 +131,42 @@ func InitOptionsArgs(minimumParams int) (*Options, *flags.Parser) {
 		logging.Infof("deduplicate cache dir files: %s", opts.PredbDir)
 		cracker.DeduplicateCache(opts.PredbDir)
 		logging.Infof("deduplicate cache dir files success: %s", opts.PredbDir)
-		os.Exit(0)
 	}
 
-	// 优化结果文件存储路径 <AppName>.<Mode>.<OutputType>
-	if opts.Output == "" {
-		opts.Output = fmt.Sprintf("%s.%s.%s", AppName, opts.Mode, opts.OutputType)
+	// 初始化连接符
+	if opts.ConcatSymbol != "" {
+		cracker.ConcatSymbol = opts.ConcatSymbol
 	}
 
 	// 处理参数中的逗号
-	opts.Inputs = cmdutils.FormatCmdsComma(opts.Inputs)
+	opts.Hashes = cmdutils.FormatCmdsComma(opts.Hashes)
 	opts.AlgoKeys = cmdutils.FormatCmdsComma(opts.AlgoKeys)
-	opts.UsedDicts = cmdutils.FormatCmdsComma(opts.UsedDicts)
+	opts.UsedPlains = cmdutils.FormatCmdsComma(opts.UsedPlains)
 	opts.UsedSecrets = cmdutils.FormatCmdsComma(opts.UsedSecrets)
+	opts.Mode = cmdutils.FormatCmdsComma(opts.Mode)
+
+	// 替换其中的-字符串
+	// 替换其中的-字符串
+	opts.UsedPlains = ReplaceHyphens(opts.UsedPlains, filepath.Join(opts.PredbDir, cracker.BuiltinPlain))
+	opts.UsedSecrets = ReplaceHyphens(opts.UsedSecrets, filepath.Join(opts.PredbDir, cracker.BuiltinSalt))
+
+	logging.Infof("Used Mode: %v", opts.Mode)
+	logging.Infof("Used Plains: %v", opts.UsedPlains)
+	logging.Infof("Used Secrets: %v", opts.UsedSecrets)
+	logging.Infof("Hashes Target: %v", opts.Hashes)
+
 	return opts, parser
+}
+
+// ReplaceHyphens 遍历字符串切片，将所有等于 "-" 的元素替换为 newString。 该函数会直接修改传入的 slice 内容。
+func ReplaceHyphens(dict []string, newString string) []string {
+	if len(dict) == 0 {
+		return []string{}
+	}
+	for i, v := range dict {
+		if v == "-" {
+			dict[i] = newString
+		}
+	}
+	return dict
 }

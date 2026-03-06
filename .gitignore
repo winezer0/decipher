@@ -37,3 +37,4 @@ go.work.sum
 /.decipher
 /decipher_cache
 *.csv
+/decipher_db

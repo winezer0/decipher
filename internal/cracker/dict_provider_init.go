@@ -1,0 +1,39 @@
+package cracker
+
+import (
+	"strings"
+
+	"github.com/winezer0/xutils/logging"
+	"github.com/winezer0/xutils/utils"
+)
+
+// InitSaltProviders 根据输入的字符串初始化 SaltProvider 列表
+func InitSaltProviders(inputs []string) []SaltProvider {
+	var providers []SaltProvider
+
+	// 如果没有输入，使用内置
+	if len(inputs) == 0 {
+		providers = append(providers, NewMemorySaltProvider([]string{""}, "empty"))
+		return providers
+	}
+
+	for _, input := range inputs {
+		if utils.FileExists(input) {
+			providers = append(providers, NewFileSaltProvider(input))
+		} else if strings.HasPrefix(input, "gen:") {
+			p, err := NewGeneratorSaltProvider(input)
+			if err != nil {
+				logging.Warnf("Failed to init salt generator %s: %v", input, err)
+				continue
+			}
+			providers = append(providers, p)
+		} else {
+			// 视为单个字符串
+			providers = append(providers, NewMemorySaltProvider([]string{input}, "DirectString"))
+		}
+	}
+
+	// 添加一个空salt情况
+	providers = append(providers, NewMemorySaltProvider([]string{""}, "empty"))
+	return providers
+}

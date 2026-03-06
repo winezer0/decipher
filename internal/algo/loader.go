@@ -2,7 +2,6 @@ package algo
 
 import (
 	"decipher/internal/algo/types"
-
 	"github.com/winezer0/xutils/utils"
 )
 
