@@ -26,7 +26,8 @@ func (a *MD5CustomGmshopAlgo) Recover(token, secret, candidatePlain string) (str
 	return "", types.ErrVerificationFailed
 }
 
-func (a *MD5CustomGmshopAlgo) NeedAddToPredb() bool { return true }
+func (a *MD5CustomGmshopAlgo) NeedAddToPredb() bool { return false }
+
 func (a *MD5CustomGmshopAlgo) Identify(token string) bool {
 	return ident.IsHashStringWithLen(token, 32)
 }

@@ -18,11 +18,6 @@ func TestMD5CustomNc65Algo(t *testing.T) {
 		t.Errorf("GetAlgoType() = %v; want %v", got, types.AlgoIsStatic)
 	}
 
-	// Test NeedAddToPredb
-	if got := algo.NeedAddToPredb(); got != true {
-		t.Errorf("NeedAddToPredb() = %v; want %v", got, true)
-	}
-
 	// Test with user-provided test data
 	plaintext := "nc@123"
 	secret := "100112100000000010B4"

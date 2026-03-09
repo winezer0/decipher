@@ -36,7 +36,7 @@ func (a *SHA512PassSaltHexAlgo) Recover(token, secret, candidatePlain string) (s
 	return "", types.ErrVerificationFailed
 }
 
-func (a *SHA512PassSaltHexAlgo) NeedAddToPredb() bool { return true }
+func (a *SHA512PassSaltHexAlgo) NeedAddToPredb() bool { return false }
 
 func (a *SHA512PassSaltHexAlgo) Identify(token string) bool {
 	return ident.IsHashStringWithLen(token, 128)

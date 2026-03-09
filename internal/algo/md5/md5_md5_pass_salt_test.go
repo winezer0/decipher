@@ -20,13 +20,6 @@ func TestMD5MD5PassSaltAlgo_GetAlgoType(t *testing.T) {
 	}
 }
 
-func TestMD5MD5PassSaltAlgo_NeedAddToPredb(t *testing.T) {
-	algo := &MD5MD5PassSaltAlgo{}
-	if got := algo.NeedAddToPredb(); !got {
-		t.Errorf("MD5MD5PassSaltAlgo.NeedAddToPredb() = %v, want true", got)
-	}
-}
-
 func TestMD5MD5PassSaltAlgo_Seal(t *testing.T) {
 	algo := &MD5MD5PassSaltAlgo{}
 	testCases := []struct {

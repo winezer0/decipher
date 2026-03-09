@@ -30,7 +30,7 @@ func (a *MD5Base64Algo) Recover(token, secret, candidatePlain string) (string, e
 	return "", types.ErrVerificationFailed
 }
 
-func (a *MD5Base64Algo) NeedAddToPredb() bool { return true }
+func (a *MD5Base64Algo) NeedAddToPredb() bool { return false }
 
 func (a *MD5Base64Algo) Identify(token string) bool {
 	// 1. 尝试 Base64 解码

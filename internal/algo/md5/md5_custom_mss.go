@@ -26,7 +26,7 @@ func (a *MD5CustomMssAlgo) Recover(token, secret, candidatePlain string) (string
 	return "", types.ErrVerificationFailed
 }
 
-func (a *MD5CustomMssAlgo) NeedAddToPredb() bool { return true }
+func (a *MD5CustomMssAlgo) NeedAddToPredb() bool { return false }
 
 func (a *MD5CustomMssAlgo) Identify(token string) bool {
 	return ident.IsHashStringWithLen(token, 32)

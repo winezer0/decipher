@@ -18,16 +18,11 @@ func TestMD5BTAdminAlgo(t *testing.T) {
 		t.Errorf("GetAlgoType() = %v; want %v", got, types.AlgoIsStatic)
 	}
 
-	// Test NeedAddToPredb
-	if got := algo.NeedAddToPredb(); got != true {
-		t.Errorf("NeedAddToPredb() = %v; want %v", got, true)
-	}
-
 	// Test with user-provided test data
 	plaintext := "aJEohvBvH8BD"
 	secret := "1001V11000000033Z1AA"
 	expectedEncrypted := "744acfc0c498c8dc2ee828cf46cba7f4"
-	
+
 	// Test Seal
 	sealed, err := algo.Seal(plaintext, secret)
 	if err != nil {

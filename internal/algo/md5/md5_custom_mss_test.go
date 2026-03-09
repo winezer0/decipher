@@ -18,15 +18,10 @@ func TestMD5CustomMssAlgo(t *testing.T) {
 		t.Errorf("GetAlgoType() = %v; want %v", got, types.AlgoIsStatic)
 	}
 
-	// Test NeedAddToPredb
-	if got := algo.NeedAddToPredb(); got != true {
-		t.Errorf("NeedAddToPredb() = %v; want %v", got, true)
-	}
-
 	// Test with user-provided test data
 	plaintext := "123456"
 	expectedEncrypted := "4d1638df3997ea92385f7ba389a67ad3"
-	
+
 	// Test Seal
 	sealed, err := algo.Seal(plaintext, "")
 	if err != nil {

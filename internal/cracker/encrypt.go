@@ -43,13 +43,13 @@ func (e *Engine) RunEncrypt(plainDicts []string, secretDicts []string, algos []a
 		go func() {
 			defer wg.Done()
 			for j := range jobs {
-				token, err := j.alg.Seal(j.text, j.salt)
+				hash, err := j.alg.Seal(e.AffixPasswd(j.text), e.AffixSalt(j.salt))
 				if err != nil {
 					// 加密失败，跳过此任务
 					continue
 				}
 				// 输出格式：Algorithm:hash:salt:plaintext
-				element := []string{j.alg.Name(), token, j.salt, j.text}
+				element := []string{j.alg.Name(), hash, j.salt, j.text}
 				// 使用 strings.Join 可能会有问题如果 salt 或 text 包含分隔符
 				// 这里简单处理
 				resultsChan <- strings.Join(element, ConcatSymbol)

@@ -17,7 +17,7 @@ for /d %%i in (cmd\*) do (
         
         echo Building !exe_name!...
         
-        go build -v -trimpath -ldflags "-s -w" -o bin\!exe_name! %%i\main.go
+        go build -v -trimpath -ldflags "-s -w" -o bin\!exe_name! .\%%i
         
         if !errorlevel! equ 0 (
             echo Successfully built !exe_name!

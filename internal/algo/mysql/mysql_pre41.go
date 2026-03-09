@@ -44,7 +44,7 @@ func (a *MySQLPre41Algo) Recover(token, secret, candidatePlain string) (string, 
 	return "", types.ErrVerificationFailed
 }
 
-func (a *MySQLPre41Algo) NeedAddToPredb() bool { return true }
+func (a *MySQLPre41Algo) NeedAddToPredb() bool { return false }
 
 func (a *MySQLPre41Algo) Identify(token string) bool {
 	//Pre-4.1 版本（如 3.23/4.0）：使用 OLD_PASSWORD() 函数生成哈希，

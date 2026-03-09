@@ -20,13 +20,6 @@ func TestSHA256CustomNcCloudAlgo_GetAlgoType(t *testing.T) {
 	}
 }
 
-func TestSHA256CustomNcCloudAlgo_NeedAddToPredb(t *testing.T) {
-	algo := &SHA256CustomNcCloudAlgo{}
-	if got := algo.NeedAddToPredb(); !got {
-		t.Errorf("SHA256CustomNcCloudAlgo.NeedAddToPredb() = %v, want true", got)
-	}
-}
-
 func TestSHA256CustomNcCloudAlgo_Seal(t *testing.T) {
 	algo := &SHA256CustomNcCloudAlgo{}
 	testCases := []struct {

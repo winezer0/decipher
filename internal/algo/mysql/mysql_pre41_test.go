@@ -20,13 +20,6 @@ func TestMySQLPre41Algo_GetAlgoType(t *testing.T) {
 	}
 }
 
-func TestMySQLPre41Algo_NeedAddToPredb(t *testing.T) {
-	algo := &MySQLPre41Algo{}
-	if got := algo.NeedAddToPredb(); !got {
-		t.Errorf("MySQLPre41Algo.NeedAddToPredb() = %v, want true", got)
-	}
-}
-
 func TestMySQLPre41Algo_Seal(t *testing.T) {
 	algo := &MySQLPre41Algo{}
 	testCases := []struct {

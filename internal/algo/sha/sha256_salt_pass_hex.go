@@ -36,7 +36,7 @@ func (a *SHA256SaltPassHexAlgo) Recover(token, secret, candidatePlain string) (s
 	return "", types.ErrVerificationFailed
 }
 
-func (a *SHA256SaltPassHexAlgo) NeedAddToPredb() bool { return true }
+func (a *SHA256SaltPassHexAlgo) NeedAddToPredb() bool { return false }
 
 func (a *SHA256SaltPassHexAlgo) Identify(token string) bool {
 	return ident.IsHashStringWithLen(token, 64)

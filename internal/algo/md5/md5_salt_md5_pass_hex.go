@@ -36,7 +36,7 @@ func (a *MD5SaltMD5PassHexAlgo) Recover(token, secret, candidatePlain string) (s
 	return "", types.ErrVerificationFailed
 }
 
-func (a *MD5SaltMD5PassHexAlgo) NeedAddToPredb() bool { return true }
+func (a *MD5SaltMD5PassHexAlgo) NeedAddToPredb() bool { return false }
 
 func (a *MD5SaltMD5PassHexAlgo) Identify(token string) bool {
 	return ident.IsHashStringWithLen(token, 32)

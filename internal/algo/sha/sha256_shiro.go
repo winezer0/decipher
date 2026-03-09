@@ -25,7 +25,7 @@ func (a *SHA256ShiroAlgo) Recover(token, secret, candidatePlain string) (string,
 	return "", types.ErrVerificationFailed
 }
 
-func (a *SHA256ShiroAlgo) NeedAddToPredb() bool { return true }
+func (a *SHA256ShiroAlgo) NeedAddToPredb() bool { return false }
 
 func (a *SHA256ShiroAlgo) Identify(token string) bool {
 	return ident.IsHashStringWithLen(token, 64)

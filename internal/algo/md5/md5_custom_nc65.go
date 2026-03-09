@@ -25,7 +25,8 @@ func (a *MD5CustomNc65Algo) Recover(token, secret, candidatePlain string) (strin
 	return "", types.ErrVerificationFailed
 }
 
-func (a *MD5CustomNc65Algo) NeedAddToPredb() bool { return true }
+func (a *MD5CustomNc65Algo) NeedAddToPredb() bool { return false }
+
 func (a *MD5CustomNc65Algo) Identify(token string) bool {
 	return strings.HasPrefix(token, "U_U++--V")
 }

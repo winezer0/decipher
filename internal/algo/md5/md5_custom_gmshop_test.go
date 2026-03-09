@@ -18,15 +18,10 @@ func TestMD5CustomGmshopAlgo(t *testing.T) {
 		t.Errorf("GetAlgoType() = %v; want %v", got, types.AlgoIsStatic)
 	}
 
-	// Test NeedAddToPredb
-	if got := algo.NeedAddToPredb(); got != true {
-		t.Errorf("NeedAddToPredb() = %v; want %v", got, true)
-	}
-
 	// Test with user-provided test data
 	plaintext := "123456"
 	expectedEncrypted := "dc7ebc16c34e1aa0d46b59e044d818fd"
-	
+
 	// Test Seal
 	sealed, err := algo.Seal(plaintext, "")
 	if err != nil {

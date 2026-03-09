@@ -18,16 +18,11 @@ func TestMD5SaltPassSaltAlgo(t *testing.T) {
 		t.Errorf("GetAlgoType() = %v; want %v", got, types.AlgoIsStatic)
 	}
 
-	// Test NeedAddToPredb
-	if got := algo.NeedAddToPredb(); got != true {
-		t.Errorf("NeedAddToPredb() = %v; want %v", got, true)
-	}
-
 	// Test with user-provided test data
 	plaintext := "123456"
 	secret := "66666"
 	expectedEncrypted := "7fc4c5d4bc41e160ed6e2b0450255e99"
-	
+
 	// Test Seal
 	sealed, err := algo.Seal(plaintext, secret)
 	if err != nil {

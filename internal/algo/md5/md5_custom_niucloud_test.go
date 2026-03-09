@@ -18,15 +18,10 @@ func TestMD5DoubleNiuCloudAlgo(t *testing.T) {
 		t.Errorf("GetAlgoType() = %v; want %v", got, types.AlgoIsStatic)
 	}
 
-	// Test NeedAddToPredb
-	if got := algo.NeedAddToPredb(); got != true {
-		t.Errorf("NeedAddToPredb() = %v; want %v", got, true)
-	}
-
 	// Test with user-provided test data
 	plaintext := "123456"
 	expectedEncrypted := "e0145437e0c0a26c644efab6f97f2985"
-	
+
 	// Test Seal
 	sealed, err := algo.Seal(plaintext, "")
 	if err != nil {

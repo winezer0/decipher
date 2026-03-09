@@ -53,24 +53,6 @@ func TestCreatePredb(t *testing.T) {
 			t.Errorf("cache_md5.predb missing password hash or format incorrect. Content: %s", content)
 		}
 	}
-
-	// MD5SaltPass file: cache_md5($salt.$pass).predb
-	// Algo Name is "md5($salt.$pass)"
-	// Filename format: fmt.Sprintf(PredbFileFormat, algoName) -> "cache_%s.predb"
-	// So "cache_md5($salt.$pass).predb"
-	saltFile := filepath.Join(predbDir, "cache_md5($salt.$pass).predb")
-	if !fileExists(saltFile) {
-		t.Errorf("Expected cache_md5($salt.$pass).predb to exist")
-	} else {
-		content := readFile(t, saltFile)
-		// Salt is empty string (from default empty provider)
-		// md5("" + "password") -> same hash
-		// Format: hash:salt:plain
-		// 5f4dcc3b5aa765d61d8327deb882cf99::password
-		if !strings.Contains(content, "5f4dcc3b5aa765d61d8327deb882cf99::password") {
-			t.Errorf("cache_md5($salt.$pass).predb content incorrect. Content: %s", content)
-		}
-	}
 }
 
 func fileExists(path string) bool {

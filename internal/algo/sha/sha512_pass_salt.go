@@ -28,4 +28,4 @@ func (a *SHA512PassSaltAlgo) Identify(token string) bool {
 	return ident.IsHashStringWithLen(token, 128)
 }
 
-func (a *SHA512PassSaltAlgo) NeedAddToPredb() bool { return true }
+func (a *SHA512PassSaltAlgo) NeedAddToPredb() bool { return false }

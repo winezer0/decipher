@@ -37,7 +37,7 @@ func (res *CrackerResult) GetKeywords() string {
 	return unique
 }
 
-func RecoverKeywords(value string) (algo, plain, salt string) {
+func ParseRecoverKey(value string) (algo, plain, salt string) {
 	parts := strings.SplitN(value, ConcatSymbol, 3)
 	if len(parts) == 3 {
 		return parts[0], parts[1], parts[2]

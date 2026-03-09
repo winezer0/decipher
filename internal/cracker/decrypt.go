@@ -55,7 +55,7 @@ func (e *Engine) RunDecrypt(targets []HashSaltTarget, secretDicts []string, decr
 			defer wg.Done()
 			for j := range jobs {
 				// 对于加密算法，调用 Recover 进行解密
-				plaintext, err := j.alg.Recover(j.target.Hash, j.secret, "")
+				plaintext, err := j.alg.Recover(j.target.Hash, e.AffixSalt(j.secret), "")
 				if err == nil && plaintext != "" {
 					result := CrackerResult{
 						Hash:      j.target.Hash,

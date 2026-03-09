@@ -26,7 +26,7 @@ func main() {
 	}
 
 	// 初始化引擎对象 注意 其中也初始化内置字典了
-	engine := cracker.NewEngine(opts.Workers, opts.PredbDir, opts.RunCacheDir)
+	engine := cracker.NewEngineWithAffix(opts.Workers, opts.PredbDir, opts.RunCacheDir, opts.PassPrefix, opts.PassSuffix, opts.SaltPrefix, opts.SaltSuffix)
 
 	// 如果是添加模式 (ModeAdd)
 	if hasMode(cracker.ModeAdded) {

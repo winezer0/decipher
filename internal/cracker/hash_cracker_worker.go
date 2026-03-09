@@ -78,7 +78,7 @@ func (e *Engine) crackWorker(ctx context.Context, taskChan <-chan crackTask, res
 				cacheKey := genCachedKey(plainLine, salt)
 				if cachedValue, exists := hashCM.GetString(cacheKey); exists {
 					if len(cachedValue) > 0 {
-						cacheAlgo, cachePlain, cacheSalt := RecoverKeywords(cachedValue)
+						cacheAlgo, cachePlain, cacheSalt := ParseRecoverKey(cachedValue)
 						result := CrackerResult{
 							Hash:      target.Hash,
 							AlgoType:  "cached",
@@ -96,7 +96,7 @@ func (e *Engine) crackWorker(ctx context.Context, taskChan <-chan crackTask, res
 				found := false
 				for _, alg := range validAlgos {
 					// 这里的 validAlgos 已经在前面筛选过，无需再判断 NeedSalt
-					plain, err := alg.Recover(target.Hash, salt, plainLine)
+					plain, err := alg.Recover(target.Hash, e.AffixSalt(salt), e.AffixPasswd(plainLine))
 					if err == nil {
 						result := CrackerResult{
 							Hash:      target.Hash,

@@ -35,9 +35,13 @@ type Engine struct {
 	workers     int
 	PredbDir    string // predb目录
 	RunCacheDir string // hash计算和解密的缓存目录
+	PassPrefix  string
+	PassSuffix  string
+	SaltPrefix  string
+	SaltSuffix  string
 }
 
-func NewEngine(workers int, cacheDir string, runCache string) *Engine {
+func NewEngineWithAffix(workers int, cacheDir string, runCache string, passPrefix string, passSuffix string, saltPrefix string, saltSuffix string) *Engine {
 	if workers <= 0 {
 		workers = runtime.NumCPU()
 	}
@@ -46,12 +50,19 @@ func NewEngine(workers int, cacheDir string, runCache string) *Engine {
 		workers:     workers,
 		PredbDir:    cacheDir,
 		RunCacheDir: runCache,
+		PassPrefix:  passPrefix,
+		PassSuffix:  passSuffix,
+		SaltPrefix:  saltPrefix,
+		SaltSuffix:  saltSuffix,
 	}
 
 	// 初始化内置文件字典
 	engine.InitBuiltinDicts()
 
 	return engine
+}
+func NewEngine(workers int, cacheDir string, runCache string) *Engine {
+	return NewEngineWithAffix(workers, cacheDir, runCache, "", "", "", "")
 }
 
 // GetAlgoPredbPath 获取算法对应的缓存文件路径
@@ -112,4 +123,21 @@ func (e *Engine) InitBuiltinDicts() {
 			logging.Errorf("Failed to write builtin salt dict to file %s error: %v", e.GetBuiltinSaltPath(), err)
 		}
 	}
+}
+
+// AffixPasswd 工具函数 为明文附加前后缀 用于适配一些算法中存在其他固定salt附加值的情况
+func (e *Engine) AffixPasswd(passwd string) string {
+	if e.PassPrefix == "" && e.PassSuffix == "" {
+		return passwd
+	}
+	return e.PassPrefix + passwd + e.PassSuffix
+}
+
+// AffixSalt 工具函数 为明文附加前后缀 用于适配一些算法中存在其他固定salt附加值的情况
+func (e *Engine) AffixSalt(salt string) string {
+	if e.SaltPrefix == "" && e.SaltSuffix == "" {
+		return salt
+	}
+
+	return e.SaltPrefix + salt + e.SaltSuffix
 }

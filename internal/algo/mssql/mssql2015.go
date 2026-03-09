@@ -86,7 +86,7 @@ func (a *MSSQL2015Algo) Recover(token, secret, candidatePlain string) (string, e
 	return "", types.ErrVerificationFailed
 }
 
-func (a *MSSQL2015Algo) NeedAddToPredb() bool { return true }
+func (a *MSSQL2015Algo) NeedAddToPredb() bool { return false }
 
 func (a *MSSQL2015Algo) Identify(token string) bool {
 	// 1. 核心前缀校验

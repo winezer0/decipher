@@ -27,7 +27,8 @@ func (a *MD5LikeShop2020Algo) Recover(token, secret, candidatePlain string) (str
 	return "", types.ErrVerificationFailed
 }
 
-func (a *MD5LikeShop2020Algo) NeedAddToPredb() bool { return true }
+func (a *MD5LikeShop2020Algo) NeedAddToPredb() bool { return false }
+
 func (a *MD5LikeShop2020Algo) Identify(token string) bool {
 	return ident.IsHashStringWithLen(token, 32)
 }

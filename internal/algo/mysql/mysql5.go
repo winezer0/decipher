@@ -38,7 +38,7 @@ func (a *MySQL5Algo) Recover(token, secret, candidatePlain string) (string, erro
 	return "", types.ErrVerificationFailed
 }
 
-func (a *MySQL5Algo) NeedAddToPredb() bool { return true }
+func (a *MySQL5Algo) NeedAddToPredb() bool { return false }
 
 func (a *MySQL5Algo) Identify(token string) bool {
 	//MySQL 5.x（包括 5.0/5.1/5.5/5.6/5.7 等）默认使用 SHA1 算法存储密码哈希：

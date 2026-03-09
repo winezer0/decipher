@@ -38,7 +38,7 @@ func (a *NTLMAlgo) Recover(token, secret, candidatePlain string) (string, error)
 	return "", types.ErrVerificationFailed
 }
 
-func (a *NTLMAlgo) NeedAddToPredb() bool { return true }
+func (a *NTLMAlgo) NeedAddToPredb() bool { return false }
 
 func (a *NTLMAlgo) Identify(token string) bool {
 	//原始哈希是 16 字节二进制数据（基于 MD4 算法对 Unicode 编码的密码计算得出）；

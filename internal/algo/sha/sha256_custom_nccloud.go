@@ -37,7 +37,7 @@ func (a *SHA256CustomNcCloudAlgo) Recover(token, secret, candidatePlain string) 
 	return "", types.ErrVerificationFailed
 }
 
-func (a *SHA256CustomNcCloudAlgo) NeedAddToPredb() bool { return true }
+func (a *SHA256CustomNcCloudAlgo) NeedAddToPredb() bool { return false }
 
 func (a *SHA256CustomNcCloudAlgo) Identify(token string) bool {
 	return strings.HasPrefix(token, "S_S++")

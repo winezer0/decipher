@@ -142,7 +142,7 @@ func (e *Engine) genPredbConcurrency(algos []algo.Algorithm, plainFiles []string
 					defer uwg.Done()
 					for line := range plainsChan {
 						for _, alg := range unsaltedAlgos {
-							hash, err := alg.Seal(line, "")
+							hash, err := alg.Seal(e.AffixPasswd(line), "")
 							if err == nil {
 								resultsChan <- predbRes{
 									algo:  alg.Name(),
@@ -177,7 +177,7 @@ func (e *Engine) genPredbConcurrency(algos []algo.Algorithm, plainFiles []string
 					for salt := range saltsChan {
 						for _, line := range plains {
 							for _, alg := range saltedAlgos {
-								hash, err := alg.Seal(line, salt)
+								hash, err := alg.Seal(e.AffixPasswd(line), e.AffixSalt(salt))
 								if err == nil {
 									resultsChan <- predbRes{
 										algo:  alg.Name(),

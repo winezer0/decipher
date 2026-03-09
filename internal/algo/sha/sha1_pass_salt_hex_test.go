@@ -18,11 +18,6 @@ func TestSHA1PassSaltHexAlgo(t *testing.T) {
 		t.Errorf("GetAlgoType() = %v; want %v", got, types.AlgoIsStatic)
 	}
 
-	// Test NeedAddToPredb
-	if got := algo.NeedAddToPredb(); got != true {
-		t.Errorf("NeedAddToPredb() = %v; want %v", got, true)
-	}
-
 	// Test Seal and Recover with non-empty plaintext and secret
 	plaintext := "123456"
 	secret := "66666"

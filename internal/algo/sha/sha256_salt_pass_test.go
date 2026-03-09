@@ -20,13 +20,6 @@ func TestSHA256SaltPassAlgo_GetAlgoType(t *testing.T) {
 	}
 }
 
-func TestSHA256SaltPassAlgo_NeedAddToPredb(t *testing.T) {
-	algo := &SHA256SaltPassAlgo{}
-	if got := algo.NeedAddToPredb(); !got {
-		t.Errorf("SHA256SaltPassAlgo.NeedAddToPredb() = %v, want true", got)
-	}
-}
-
 func TestSHA256SaltPassAlgo_Seal(t *testing.T) {
 	algo := &SHA256SaltPassAlgo{}
 	testCases := []struct {

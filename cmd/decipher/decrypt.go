@@ -64,7 +64,9 @@ func decryptAction(engine *cracker.Engine, opts *Options) error {
 	if len(crackedHashes) > 0 {
 		for _, target := range basicTargets {
 			if cached, ok := crackedHashes[strings.ToLower(target.Hash)]; ok {
-				fmt.Printf("\nFound cached result for %s: %s\n\n", target.Hash, cached.Plaintext)
+				fmt.Printf("\n[+] Success! Result Cached: %s\n", target.Hash)
+				fmt.Printf("    Plain    : %s\n\n", cached.Plaintext)
+
 				allResults = append(allResults, cached)
 				continue
 			}

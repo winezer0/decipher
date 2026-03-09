@@ -16,8 +16,8 @@ import (
 
 const (
 	AppName      = "decipher"
-	AppVersion   = "0.0.5"
-	BuildDate    = "2026-03-09"
+	AppVersion   = "0.0.6"
+	BuildDate    = "2026-03-17"
 	AppShortDesc = "common hash fast cracker"
 	AppLongDesc  = "common hash fast cracker"
 )
@@ -32,6 +32,11 @@ type Options struct {
 	// 字典文件, 用于预计算predb/解密/加密的 明文字典和盐密钥文件，预计算predb时相同文件只会计算一次
 	UsedPlains  []string `short:"d" long:"used-plains" description:"custom plains dict, will add to pre-db and cracking dynamic hash"`
 	UsedSecrets []string `short:"s" long:"used-secrets" description:"custom secrets dict, will add to pre-db and cracking (hash salts or decryptAction keys)"`
+	SaltPrefix  string   `long:"sp" description:"Prefix to be prepended to salt before use" default:""`
+	SaltSuffix  string   `long:"ss" description:"Suffix to be appended to salt before use" default:""`
+	PassPrefix  string   `long:"pp" description:"Prefix to be prepended to passwd before use" default:""`
+	PassSuffix  string   `long:"ps" description:"Suffix to be appended to passwd before use" default:""`
+
 	// 实际使用的算法，为空时使用所有算法
 	AlgoKeys []string `short:"a" long:"algos" description:"Keywords used for algos filtering (e.g. md5)"`
 
@@ -52,7 +57,7 @@ type Options struct {
 	NoPredbCrack bool `long:"npc" description:"Disable hash cracking by predb found"`
 	NoDynaCrack  bool `long:"ndc" description:"Disable hash cracking by dynamic calc"`
 	// NohashCache 禁用哈希缓存，不进行缓存读写
-	NohashCache bool `ong:"nhc" description:"Disable hash cracking cache"`
+	NohashCache bool `long:"nhc" description:"Disable hash cracking cache"`
 
 	// 缓存目录配置 一般不需要修改
 	PredbDir     string `long:"predb-dir" description:"Dir for store hash pre-db files" default:"decipher_db"`
