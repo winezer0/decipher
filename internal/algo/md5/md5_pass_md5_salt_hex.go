@@ -2,6 +2,7 @@ package md5
 
 import (
 	"decipher/internal/ident"
+	"decipher/internal/myutils"
 	"encoding/hex"
 
 	"decipher/internal/algo/types"
@@ -30,7 +31,7 @@ func (a *MD5PassMD5SaltHexAlgo) Seal(plaintext, secret string) (string, error) {
 
 func (a *MD5PassMD5SaltHexAlgo) Recover(token, secret, candidatePlain string) (string, error) {
 	computed, _ := a.Seal(candidatePlain, secret)
-	if computed == token {
+	if myutils.EqualString(computed, token, true) {
 		return candidatePlain, nil
 	}
 	return "", types.ErrVerificationFailed

@@ -3,6 +3,7 @@ package md5
 import (
 	"decipher/internal/algo/types"
 	"decipher/internal/ident"
+	"decipher/internal/myutils"
 
 	"golang.org/x/text/encoding/unicode"
 )
@@ -23,7 +24,7 @@ func (a *MD5UnicodeAlgo) Seal(plaintext, secret string) (string, error) {
 
 func (a *MD5UnicodeAlgo) Recover(token, secret, candidatePlain string) (string, error) {
 	computed, _ := a.Seal(candidatePlain, "")
-	if computed == token {
+	if myutils.EqualString(computed, token, true) {
 		return candidatePlain, nil
 	}
 	return "", types.ErrVerificationFailed

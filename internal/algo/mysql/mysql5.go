@@ -4,6 +4,7 @@ import (
 	"crypto/sha1"
 	"decipher/internal/algo/types"
 	"decipher/internal/ident"
+	"decipher/internal/myutils"
 	"encoding/hex"
 )
 
@@ -32,7 +33,7 @@ func (a *MySQL5Algo) Seal(plaintext, secret string) (string, error) {
 
 func (a *MySQL5Algo) Recover(token, secret, candidatePlain string) (string, error) {
 	computed, _ := a.Seal(candidatePlain, "")
-	if computed == token {
+	if myutils.EqualString(computed, token, true) {
 		return candidatePlain, nil
 	}
 	return "", types.ErrVerificationFailed

@@ -3,6 +3,7 @@ package ntlm
 import (
 	"decipher/internal/algo/types"
 	"decipher/internal/ident"
+	"decipher/internal/myutils"
 	"encoding/hex"
 	"unicode/utf16"
 
@@ -32,7 +33,7 @@ func (a *NTLMAlgo) Seal(plaintext, secret string) (string, error) {
 
 func (a *NTLMAlgo) Recover(token, secret, candidatePlain string) (string, error) {
 	computed, _ := a.Seal(candidatePlain, "")
-	if computed == token {
+	if myutils.EqualString(computed, token, true) {
 		return candidatePlain, nil
 	}
 	return "", types.ErrVerificationFailed

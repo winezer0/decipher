@@ -4,6 +4,7 @@ import (
 	"crypto/sha512"
 	"decipher/internal/algo/types"
 	"decipher/internal/ident"
+	"decipher/internal/myutils"
 	"encoding/hex"
 	"io"
 )
@@ -26,7 +27,7 @@ func (a *SHA512Algo) Recover(token, secret, candidatePlain string) (string, erro
 	h := sha512.New()
 	io.WriteString(h, candidatePlain)
 	computed := hex.EncodeToString(h.Sum(nil))
-	if computed == token {
+	if myutils.EqualString(computed, token, true) {
 		return candidatePlain, nil
 	}
 	return "", types.ErrVerificationFailed

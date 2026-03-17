@@ -1,6 +1,7 @@
 package scrypt
 
 import (
+	"decipher/internal/myutils"
 	"encoding/base64"
 	"fmt"
 	"strconv"
@@ -44,7 +45,7 @@ func (a *ScryptAlgo) Recover(token, secret, candidatePlain string) (string, erro
 		return "", types.ErrVerificationFailed
 	}
 
-	if string(computedHash) == string(expectedHash) {
+	if myutils.EqualString(string(computedHash), string(expectedHash), true) {
 		return candidatePlain, nil
 	}
 	return "", types.ErrVerificationFailed

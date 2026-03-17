@@ -16,22 +16,22 @@ import (
 
 const (
 	AppName      = "decipher"
-	AppVersion   = "0.0.6"
-	BuildDate    = "2026-03-17"
+	AppVersion   = "0.0.7"
+	BuildDate    = "2026-03-18"
 	AppShortDesc = "common hash fast cracker"
 	AppLongDesc  = "common hash fast cracker"
 )
 
 // Options 命令行参数结构体
 type Options struct {
-	Hashes []string `short:"i" long:"hashes" description:"hashes str or hashes files"`
+	Hashes []string `short:"i" long:"hashes" description:"hashes str or hashes files (input also allowed prefix file/str/gen)"`
 
 	// 操作模式 add 添加数据到predb/enc加密/dec解密/
 	Mode []string `short:"m" long:"mode" description:"action mode" choices:"add,enc,dec,id" default:"dec"`
 
 	// 字典文件, 用于预计算predb/解密/加密的 明文字典和盐密钥文件，预计算predb时相同文件只会计算一次
-	UsedPlains  []string `short:"d" long:"used-plains" description:"custom plains dict, will add to pre-db and cracking dynamic hash"`
-	UsedSecrets []string `short:"s" long:"used-secrets" description:"custom secrets dict, will add to pre-db and cracking (hash salts or decryptAction keys)"`
+	UsedPlains  []string `short:"p" long:"plains" description:"plains dict for selected actions (input also allowed prefix file/str/gen)"`
+	UsedSecrets []string `short:"s" long:"secrets" description:"secrets dict for selected actions (input also allowed prefix file/str/gen)"`
 	SaltPrefix  string   `long:"sp" description:"Prefix to be prepended to salt before use" default:""`
 	SaltSuffix  string   `long:"ss" description:"Suffix to be appended to salt before use" default:""`
 	PassPrefix  string   `long:"pp" description:"Prefix to be prepended to passwd before use" default:""`

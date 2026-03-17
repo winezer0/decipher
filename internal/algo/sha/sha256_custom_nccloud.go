@@ -3,6 +3,7 @@ package sha
 import (
 	"crypto/sha256"
 	"decipher/internal/algo/types"
+	"decipher/internal/myutils"
 	"encoding/base64"
 	"encoding/hex"
 	"strings"
@@ -31,7 +32,7 @@ func (a *SHA256CustomNcCloudAlgo) Seal(plaintext, secret string) (string, error)
 
 func (a *SHA256CustomNcCloudAlgo) Recover(token, secret, candidatePlain string) (string, error) {
 	computed, _ := a.Seal(candidatePlain, secret)
-	if computed == token {
+	if myutils.EqualString(computed, token, true) {
 		return candidatePlain, nil
 	}
 	return "", types.ErrVerificationFailed

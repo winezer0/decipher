@@ -3,6 +3,7 @@ package md5
 import (
 	"crypto/md5"
 	"decipher/internal/ident"
+	"decipher/internal/myutils"
 	"encoding/hex"
 	"io"
 
@@ -45,7 +46,7 @@ func (a *MD5Algo) Recover(token, secret, candidatePlain string) (string, error) 
 	if err != nil {
 		return "", err
 	}
-	if computed == token {
+	if myutils.EqualString(computed, token, true) {
 		return candidatePlain, nil
 	}
 	return "", types.ErrVerificationFailed

@@ -3,6 +3,7 @@ package md5
 import (
 	"crypto/md5"
 	"decipher/internal/algo/types"
+	"decipher/internal/myutils"
 	"encoding/base64"
 	"io"
 )
@@ -24,7 +25,7 @@ func (a *MD5Base64Algo) Seal(plaintext, secret string) (string, error) {
 
 func (a *MD5Base64Algo) Recover(token, secret, candidatePlain string) (string, error) {
 	computed, _ := a.Seal(candidatePlain, "")
-	if computed == token {
+	if myutils.EqualString(computed, token, true) {
 		return candidatePlain, nil
 	}
 	return "", types.ErrVerificationFailed
@@ -38,6 +39,7 @@ func (a *MD5Base64Algo) Identify(token string) bool {
 	if err != nil {
 		return false
 	}
+
 	// 2. 检查解码后的长度是否为 16 (MD5 Hash Size)
-	return len(decoded) == md5.Size
+	return len(decoded) == 16 || len(decoded) == 32
 }

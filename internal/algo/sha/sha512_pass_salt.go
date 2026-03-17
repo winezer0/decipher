@@ -3,6 +3,7 @@ package sha
 import (
 	"decipher/internal/algo/types"
 	"decipher/internal/ident"
+	"decipher/internal/myutils"
 )
 
 type SHA512PassSaltAlgo struct{}
@@ -19,7 +20,7 @@ func (a *SHA512PassSaltAlgo) Seal(plaintext, secret string) (string, error) {
 
 func (a *SHA512PassSaltAlgo) Recover(token, secret, candidatePlain string) (string, error) {
 	computed := sha512Hex(candidatePlain + secret)
-	if computed == token {
+	if myutils.EqualString(computed, token, true) {
 		return candidatePlain, nil
 	}
 	return "", types.ErrVerificationFailed
