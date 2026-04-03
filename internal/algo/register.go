@@ -58,8 +58,9 @@ func GetAllAlgorithms() []Algorithm {
 		// Static Hash Algorithms - SHA Series
 		&sha.SHA1Algo{},
 		&sha.SHA1PassSaltAlgo{},
+		&sha.SHA1PassSalt2Algo{},
 		&sha.SHA1SaltPassAlgo{},
-		&sha.SHA1CustomYYKAlgo{},
+		&sha.Sha1BcryptAlgo{},
 		&sha.SHA1DoubleAlgo{},
 		&sha.SHA1MD5Algo{},
 		&sha.SHA256Algo{},
