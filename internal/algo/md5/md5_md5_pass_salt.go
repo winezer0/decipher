@@ -6,6 +6,7 @@ import (
 	"decipher/internal/myutils"
 )
 
+// MD5MD5PassSaltAlgo wanlshop 等cms
 type MD5MD5PassSaltAlgo struct{}
 
 func (a *MD5MD5PassSaltAlgo) Name() string { return "md5(md5($pass).$salt)" }
