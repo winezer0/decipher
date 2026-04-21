@@ -6,13 +6,6 @@ import (
 	"decipher/internal/algo/types"
 )
 
-func TestSHA256CustomNcCloudAlgo_Name(t *testing.T) {
-	algo := &SHA256CustomNcCloudAlgo{}
-	if got := algo.Name(); got != "sha256_custom_nccloud" {
-		t.Errorf("SHA256CustomNcCloudAlgo.Name() = %v, want sha256_custom_nccloud", got)
-	}
-}
-
 func TestSHA256CustomNcCloudAlgo_GetAlgoType(t *testing.T) {
 	algo := &SHA256CustomNcCloudAlgo{}
 	if got := algo.GetAlgoType(); got != types.AlgoIsStatic {

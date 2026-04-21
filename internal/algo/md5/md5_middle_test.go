@@ -9,8 +9,8 @@ func TestMD5MiddleAlgo(t *testing.T) {
 	algo := &MD5MiddleAlgo{}
 
 	// Test Name
-	if got := algo.Name(); got != "md5_middle" {
-		t.Errorf("Name() = %q; want %q", got, "md5_middle")
+	if got := algo.Name(); got != "md5($pass)[8,24]" {
+		t.Errorf("Name() = %q; want %q", got, "md5($pass)[8,24]")
 	}
 
 	// Test GetAlgoType

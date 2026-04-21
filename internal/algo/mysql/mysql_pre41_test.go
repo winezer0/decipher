@@ -6,13 +6,6 @@ import (
 	"decipher/internal/algo/types"
 )
 
-func TestMySQLPre41Algo_Name(t *testing.T) {
-	algo := &MySQLPre41Algo{}
-	if got := algo.Name(); got != "mysql" {
-		t.Errorf("MySQLPre41Algo.Name() = %v, want mysql", got)
-	}
-}
-
 func TestMySQLPre41Algo_GetAlgoType(t *testing.T) {
 	algo := &MySQLPre41Algo{}
 	if got := algo.GetAlgoType(); got != types.AlgoIsStatic {

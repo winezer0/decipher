@@ -9,7 +9,7 @@ import (
 
 type Base64Algo struct{}
 
-func (a *Base64Algo) Name() string { return "base64" }
+func (a *Base64Algo) Name() string { return "base64($pass)" }
 
 func (a *Base64Algo) GetAlgoType() types.AlgoType {
 	return types.AlgoIsEncrypt

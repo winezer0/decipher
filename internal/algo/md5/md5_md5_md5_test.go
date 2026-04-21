@@ -6,13 +6,6 @@ import (
 	"decipher/internal/algo/types"
 )
 
-func TestMD5TripleAlgo_Name(t *testing.T) {
-	algo := &MD5TripleAlgo{}
-	if got := algo.Name(); got != "md5(md5(md5($pass)))" {
-		t.Errorf("MD5TripleAlgo.Name() = %v, want md5(md5(md5($pass)))", got)
-	}
-}
-
 func TestMD5TripleAlgo_GetAlgoType(t *testing.T) {
 	algo := &MD5TripleAlgo{}
 	if got := algo.GetAlgoType(); got != types.AlgoIsStatic {

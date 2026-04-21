@@ -41,9 +41,9 @@ func TestCreatePredb(t *testing.T) {
 	// Verify Output Files
 	// MD5 file: cache_md5.predb
 	// Algo Name is "md5"
-	md5File := filepath.Join(predbDir, "cache_md5.predb")
+	md5File := filepath.Join(predbDir, "cache_md5($pass).predb")
 	if !fileExists(md5File) {
-		t.Errorf("Expected cache_md5.predb to exist")
+		t.Errorf("Expected cache_md5($pass).predb to exist")
 	} else {
 		content := readFile(t, md5File)
 		// password -> 5f4dcc3b5aa765d61d8327deb882cf99

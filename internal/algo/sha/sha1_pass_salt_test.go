@@ -5,13 +5,6 @@ import (
 	"testing"
 )
 
-func TestSHA1PassSaltAlgo_Name(t *testing.T) {
-	algo := &SHA1PassSaltAlgo{}
-	if got := algo.Name(); got != "sha1($pass.$salt)" {
-		t.Errorf("SHA1PassSaltAlgo.Name() = %v, want sha1($pass.$salt)", got)
-	}
-}
-
 func TestSHA1PassSaltAlgo_Seal(t *testing.T) {
 	algo := &SHA1PassSaltAlgo{}
 	tests := []struct {

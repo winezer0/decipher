@@ -24,7 +24,7 @@ type predbRes struct {
 
 // CreatePredb 基于 加密算法、明文字典列表、密钥字典列表 生成预计算hash 并自动添加到predb中
 func (e *Engine) CreatePredb(plainDicts []string, secretDicts []string, selectAlgos []algo.Algorithm) error {
-	logging.Info("Processing Cache Generation...")
+	logging.Info("CreatePredb Processing Cache Generation...")
 	if len(selectAlgos) == 0 {
 		selectAlgos = algo.GetAllAlgorithms()
 	}
@@ -211,7 +211,7 @@ func (e *Engine) genPredbConcurrency(algos []algo.Algorithm, plainFiles []string
 			continue
 		}
 
-		logging.Infof("Processing plain file: %s", path)
+		logging.Infof("GenPredb Processing plain file: %s", path)
 		scanner := bufio.NewScanner(f)
 		for scanner.Scan() {
 			line := strings.TrimSpace(scanner.Text())

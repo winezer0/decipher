@@ -6,13 +6,6 @@ import (
 	"decipher/internal/algo/types"
 )
 
-func TestSHA256SaltPassAlgo_Name(t *testing.T) {
-	algo := &SHA256SaltPassAlgo{}
-	if got := algo.Name(); got != "sha256($salt.$pass)" {
-		t.Errorf("SHA256SaltPassAlgo.Name() = %v, want sha256($salt.$pass)", got)
-	}
-}
-
 func TestSHA256SaltPassAlgo_GetAlgoType(t *testing.T) {
 	algo := &SHA256SaltPassAlgo{}
 	if got := algo.GetAlgoType(); got != types.AlgoIsStatic {

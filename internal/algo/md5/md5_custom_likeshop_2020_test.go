@@ -9,8 +9,8 @@ func TestMD5LikeShop2020Algo(t *testing.T) {
 	algo := &MD5LikeShop2020Algo{}
 
 	// Test Name
-	if got := algo.Name(); got != "md5($pass.md5(y.$salt.x).2020)" {
-		t.Errorf("Name() = %q; want %q", got, "md5($pass.md5(y.$salt.x).2020)")
+	if got := algo.Name(); got != "md5_custom_likeshop_2020" {
+		t.Errorf("Name() = %q; want %q", got, "md5_custom_likeshop_2020")
 	}
 
 	// Test GetAlgoType

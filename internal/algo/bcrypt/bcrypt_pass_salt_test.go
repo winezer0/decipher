@@ -14,7 +14,7 @@ func TestBcryptPassSaltAlgo(t *testing.T) {
 	wrongSalt := "wrongSalt"
 
 	t.Run("Name Check", func(t *testing.T) {
-		if algo.Name() != "bcrypt_pass_salt" {
+		if algo.Name() != "bcrypt($pass.$salt)" {
 			t.Errorf("Expected name 'bcrypt_pass_salt', got '%s'", algo.Name())
 		}
 	})

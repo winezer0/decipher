@@ -8,7 +8,7 @@ import (
 
 type MD5SubAlgo struct{}
 
-func (a *MD5SubAlgo) Name() string { return "md5(substring(md5($pass),8,16))" }
+func (a *MD5SubAlgo) Name() string { return "md5(md5($pass)[8,24])" }
 
 func (a *MD5SubAlgo) GetAlgoType() types.AlgoType { return types.AlgoIsStatic }
 

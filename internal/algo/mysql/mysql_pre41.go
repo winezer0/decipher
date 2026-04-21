@@ -9,7 +9,7 @@ import (
 
 type MySQLPre41Algo struct{}
 
-func (a *MySQLPre41Algo) Name() string { return "mysql" }
+func (a *MySQLPre41Algo) Name() string { return "mysql_pre41" }
 
 func (a *MySQLPre41Algo) GetAlgoType() types.AlgoType { return types.AlgoIsStatic }
 

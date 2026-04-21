@@ -43,7 +43,7 @@ func GetAllAlgorithms() []Algorithm {
 		&md5.MD5CustomMssAlgo{},
 		&md5.MD5CustomNc65Algo{},
 		&md5.MD5CustomGmshopAlgo{},
-		&md5.MD5CustomLizhiAlgo{},
+		&md5.MD5PassSaltAlgo2{},
 		&md5.MD5BTAdminAlgo{},
 		// MD5 Hex Series
 		&md5.MD5PassSaltHexAlgo{},

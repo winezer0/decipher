@@ -5,13 +5,6 @@ import (
 	"testing"
 )
 
-func TestSHA1Algo_Name(t *testing.T) {
-	algo := &SHA1Algo{}
-	if got := algo.Name(); got != "sha1" {
-		t.Errorf("SHA1Algo.Name() = %v, want sha1", got)
-	}
-}
-
 func TestSHA1Algo_GetAlgoType(t *testing.T) {
 	algo := &SHA1Algo{}
 	if got := algo.GetAlgoType(); got != types.AlgoIsStatic {

@@ -9,8 +9,8 @@ func TestBcryptMd5Algo(t *testing.T) {
 	algo := &BcryptMd5Algo{}
 
 	// Test Name
-	if got := algo.Name(); got != "bcrypt_md5" {
-		t.Errorf("Name() = %q; want %q", got, "bcrypt_md5")
+	if got := algo.Name(); got != "bcrypt(md5($pass))" {
+		t.Errorf("Name() = %q; want %q", got, "bcrypt(md5($pass))")
 	}
 
 	// Test GetAlgoType
@@ -63,7 +63,7 @@ func TestBcryptMd5Algo(t *testing.T) {
 
 func TestBcryptMd5Algo_Recover_UserProvided(t *testing.T) {
 	algo := &BcryptMd5Algo{}
-	
+
 	// 测试使用用户提供的数据
 	plaintext := "123456"
 	salt := "666666"

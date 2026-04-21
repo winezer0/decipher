@@ -8,7 +8,7 @@ import (
 
 type MD5MiddleAlgo struct{}
 
-func (a *MD5MiddleAlgo) Name() string { return "md5_middle" }
+func (a *MD5MiddleAlgo) Name() string { return "md5($pass)[8,24]" }
 
 func (a *MD5MiddleAlgo) GetAlgoType() types.AlgoType { return types.AlgoIsStatic }
 

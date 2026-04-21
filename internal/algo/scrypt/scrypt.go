@@ -14,7 +14,7 @@ import (
 
 type ScryptAlgo struct{}
 
-func (a *ScryptAlgo) Name() string { return "scrypt" }
+func (a *ScryptAlgo) Name() string { return "scrypt($salt,$pass)" }
 
 func (a *ScryptAlgo) GetAlgoType() types.AlgoType { return types.AlgoIsDynamic }
 

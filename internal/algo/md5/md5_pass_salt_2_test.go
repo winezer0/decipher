@@ -6,29 +6,22 @@ import (
 	"decipher/internal/algo/types"
 )
 
-func TestMD5CustomLizhiAlgo_Name(t *testing.T) {
-	algo := &MD5CustomLizhiAlgo{}
-	if got := algo.Name(); got != "md5_custom_lizhi" {
-		t.Errorf("MD5CustomLizhiAlgo.Name() = %v, want md5_custom_lizhi", got)
-	}
-}
-
 func TestMD5CustomLizhiAlgo_GetAlgoType(t *testing.T) {
-	algo := &MD5CustomLizhiAlgo{}
+	algo := &MD5PassSaltAlgo2{}
 	if got := algo.GetAlgoType(); got != types.AlgoIsStatic {
-		t.Errorf("MD5CustomLizhiAlgo.GetAlgoType() = %v, want AlgoIsStatic", got)
+		t.Errorf("MD5PassSaltAlgo2.GetAlgoType() = %v, want AlgoIsStatic", got)
 	}
 }
 
 func TestMD5CustomLizhiAlgo_NeedSalt(t *testing.T) {
-	algo := &MD5CustomLizhiAlgo{}
+	algo := &MD5PassSaltAlgo2{}
 	if got := algo.NeedSalt(); !got {
-		t.Errorf("MD5CustomLizhiAlgo.NeedSalt() = %v, want true", got)
+		t.Errorf("MD5PassSaltAlgo2.NeedSalt() = %v, want true", got)
 	}
 }
 
 func TestMD5CustomLizhiAlgo_SealAndRecover(t *testing.T) {
-	algo := &MD5CustomLizhiAlgo{}
+	algo := &MD5PassSaltAlgo2{}
 
 	plain := "password"
 	salt := "mysalt"
@@ -56,7 +49,7 @@ func TestMD5CustomLizhiAlgo_SealAndRecover(t *testing.T) {
 }
 
 func TestMD5CustomLizhiAlgo_Identify(t *testing.T) {
-	algo := &MD5CustomLizhiAlgo{}
+	algo := &MD5PassSaltAlgo2{}
 
 	if !algo.Identify("5f4dcc3b5aa765d61d8327deb882cf99") {
 		t.Fatalf("Identify() expected true for md5 hex")

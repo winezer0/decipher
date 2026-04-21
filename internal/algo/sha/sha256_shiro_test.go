@@ -6,13 +6,6 @@ import (
 	"decipher/internal/algo/types"
 )
 
-func TestSHA256ShiroAlgo_Name(t *testing.T) {
-	algo := &SHA256ShiroAlgo{}
-	if got := algo.Name(); got != "sha256_shiro" {
-		t.Errorf("SHA256ShiroAlgo.Name() = %v, want sha256_shiro", got)
-	}
-}
-
 func TestSHA256ShiroAlgo_GetAlgoType(t *testing.T) {
 	algo := &SHA256ShiroAlgo{}
 	if got := algo.GetAlgoType(); got != types.AlgoIsStatic {

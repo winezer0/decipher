@@ -13,7 +13,7 @@ import (
 // MD5Algo standard md5($pass)
 type MD5Algo struct{}
 
-func (a *MD5Algo) Name() string { return "md5" }
+func (a *MD5Algo) Name() string { return "md5($pass)" }
 
 func (a *MD5Algo) GetAlgoType() types.AlgoType {
 	return types.AlgoIsStatic

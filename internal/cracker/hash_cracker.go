@@ -46,7 +46,7 @@ func (e *Engine) RunHashCrack(targets []HashSaltTarget, plainFiles []string, sec
 	// 开始进行解密
 	startTime := time.Now()
 	for _, source := range plainDictSources {
-		logging.Infof("Processing dictionary: %s", source.Name)
+		logging.Infof("RunHashCrack processing dictionary: %s", source.Name)
 
 		reader, err := source.Provider()
 		if err != nil {

@@ -11,7 +11,7 @@ import (
 
 type SHA512Algo struct{}
 
-func (a *SHA512Algo) Name() string { return "sha512" }
+func (a *SHA512Algo) Name() string { return "sha512($pass)" }
 
 func (a *SHA512Algo) GetAlgoType() types.AlgoType { return types.AlgoIsStatic }
 

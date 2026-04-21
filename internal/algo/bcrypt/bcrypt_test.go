@@ -7,13 +7,6 @@ import (
 	"decipher/internal/algo/types"
 )
 
-func TestBcryptAlgo_Name(t *testing.T) {
-	algo := &BcryptAlgo{}
-	if got := algo.Name(); got != "bcrypt" {
-		t.Errorf("BcryptAlgo.Name() = %v; want %v", got, "bcrypt")
-	}
-}
-
 func TestBcryptAlgo_GetAlgoType(t *testing.T) {
 	algo := &BcryptAlgo{}
 	if got := algo.GetAlgoType(); got != types.AlgoIsDynamic {

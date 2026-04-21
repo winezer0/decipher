@@ -8,7 +8,7 @@ import (
 
 type SHA256Algo struct{}
 
-func (a *SHA256Algo) Name() string { return "sha256" }
+func (a *SHA256Algo) Name() string { return "sha256($pass)" }
 
 func (a *SHA256Algo) GetAlgoType() types.AlgoType { return types.AlgoIsStatic }
 

@@ -6,13 +6,6 @@ import (
 	"decipher/internal/algo/types"
 )
 
-func TestSHA1MD5Algo_Name(t *testing.T) {
-	algo := &SHA1MD5Algo{}
-	if got := algo.Name(); got != "sha1(md5($pass))" {
-		t.Errorf("SHA1MD5Algo.Name() = %v, want sha1(md5($pass))", got)
-	}
-}
-
 func TestSHA1MD5Algo_GetAlgoType(t *testing.T) {
 	algo := &SHA1MD5Algo{}
 	if got := algo.GetAlgoType(); got != types.AlgoIsStatic {

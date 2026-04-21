@@ -9,8 +9,8 @@ func TestMD5SubAlgo(t *testing.T) {
 	algo := &MD5SubAlgo{}
 
 	// Test Name
-	if got := algo.Name(); got != "md5(substring(md5($pass),8,16))" {
-		t.Errorf("Name() = %q; want %q", got, "md5(substring(md5($pass),8,16))")
+	if got := algo.Name(); got != "md5(md5($pass)[8,24])" {
+		t.Errorf("Name() = %q; want %q", got, "md5(md5($pass)[8,24])")
 	}
 
 	// Test GetAlgoType
@@ -26,7 +26,7 @@ func TestMD5SubAlgo(t *testing.T) {
 	// Test with user-provided test data
 	plaintext := "123456"
 	expectedEncrypted := "3acf16259def65456fc2a68ab5e10d96"
-	
+
 	// Test Seal
 	sealed, err := algo.Seal(plaintext, "")
 	if err != nil {

@@ -10,7 +10,7 @@ import (
 
 type BcryptPassSaltAlgo struct{}
 
-func (a *BcryptPassSaltAlgo) Name() string { return "bcrypt_pass_salt" }
+func (a *BcryptPassSaltAlgo) Name() string { return "bcrypt($pass.$salt)" }
 
 func (a *BcryptPassSaltAlgo) GetAlgoType() types.AlgoType {
 	return types.AlgoIsDynamic

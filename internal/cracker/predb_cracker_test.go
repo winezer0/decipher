@@ -166,7 +166,7 @@ func TestRunLocalCrack(t *testing.T) {
 		tempDir := t.TempDir()
 
 		cacheContent := "e10adc3949ba59abbe56e057f20f883e::123456\n"
-		cacheFile := filepath.Join(tempDir, "cache_md5.predb")
+		cacheFile := filepath.Join(tempDir, "cache_md5($pass).predb")
 		if err := os.WriteFile(cacheFile, []byte(cacheContent), 0644); err != nil {
 			t.Fatalf("Failed to create cache file: %v", err)
 		}
@@ -185,7 +185,7 @@ func TestRunLocalCrack(t *testing.T) {
 		if results[0].Plaintext != "123456" {
 			t.Errorf("Expected plaintext '123456', got '%s'", results[0].Plaintext)
 		}
-		if results[0].Algorithm != "md5" {
+		if results[0].Algorithm != "md5($pass)" {
 			t.Errorf("Expected algorithm 'md5', got '%s'", results[0].Algorithm)
 		}
 	})
@@ -193,8 +193,8 @@ func TestRunLocalCrack(t *testing.T) {
 	t.Run("AlgorithmFilter", func(t *testing.T) {
 		tempDir := t.TempDir()
 
-		md5Cache := filepath.Join(tempDir, "cache_md5.predb")
-		sha1Cache := filepath.Join(tempDir, "cache_sha1.predb")
+		md5Cache := filepath.Join(tempDir, "cache_md5($pass).predb")
+		sha1Cache := filepath.Join(tempDir, "cache_sha1($pass).predb")
 
 		if err := os.WriteFile(md5Cache, []byte("hash1::pass1\n"), 0644); err != nil {
 			t.Fatalf("Failed to create md5 cache: %v", err)
@@ -215,7 +215,7 @@ func TestRunLocalCrack(t *testing.T) {
 		if len(results) != 1 {
 			t.Errorf("Expected 1 result (md5 only), got %d", len(results))
 		}
-		if len(results) > 0 && results[0].Algorithm != "md5" {
+		if len(results) > 0 && results[0].Algorithm != "md5($pass)" {
 			t.Errorf("Expected md5 algorithm, got '%s'", results[0].Algorithm)
 		}
 	})
@@ -224,7 +224,7 @@ func TestRunLocalCrack(t *testing.T) {
 		tempDir := t.TempDir()
 
 		cacheContent := "testhash::testpass\n"
-		cacheFile := filepath.Join(tempDir, "cache_md5.predb")
+		cacheFile := filepath.Join(tempDir, "cache_md5($pass).predb")
 		if err := os.WriteFile(cacheFile, []byte(cacheContent), 0644); err != nil {
 			t.Fatalf("Failed to create cache file: %v", err)
 		}
@@ -243,7 +243,7 @@ func TestRunLocalCrack(t *testing.T) {
 		tempDir := t.TempDir()
 
 		cacheContent := "e10adc3949ba59abbe56e057f20f883e::123456\n"
-		cacheFile := filepath.Join(tempDir, "cache_md5.predb")
+		cacheFile := filepath.Join(tempDir, "cache_md5($pass).predb")
 		if err := os.WriteFile(cacheFile, []byte(cacheContent), 0644); err != nil {
 			t.Fatalf("Failed to create cache file: %v", err)
 		}
@@ -263,7 +263,7 @@ func TestRunLocalCrack(t *testing.T) {
 		tempDir := t.TempDir()
 
 		cacheContent := "e10adc3949ba59abbe56e057f20f883e::123456\n"
-		cacheFile := filepath.Join(tempDir, "cache_md5.predb")
+		cacheFile := filepath.Join(tempDir, "cache_md5($pass).predb")
 		if err := os.WriteFile(cacheFile, []byte(cacheContent), 0644); err != nil {
 			t.Fatalf("Failed to create cache file: %v", err)
 		}
@@ -282,8 +282,8 @@ func TestRunLocalCrack(t *testing.T) {
 	t.Run("MultipleCacheFiles", func(t *testing.T) {
 		tempDir := t.TempDir()
 
-		cache1 := filepath.Join(tempDir, "cache_md5.predb")
-		cache2 := filepath.Join(tempDir, "cache_sha1.predb")
+		cache1 := filepath.Join(tempDir, "cache_md5($pass).predb")
+		cache2 := filepath.Join(tempDir, "cache_sha1($pass).predb")
 
 		if err := os.WriteFile(cache1, []byte("hash1::pass1\n"), 0644); err != nil {
 			t.Fatalf("Failed to create cache1: %v", err)
@@ -310,7 +310,7 @@ func TestRunLocalCrack(t *testing.T) {
 		tempDir := t.TempDir()
 
 		cacheContent := "hash1::password\nhash1::password\n"
-		cacheFile := filepath.Join(tempDir, "cache_md5.predb")
+		cacheFile := filepath.Join(tempDir, "cache_md5($pass).predb")
 		if err := os.WriteFile(cacheFile, []byte(cacheContent), 0644); err != nil {
 			t.Fatalf("Failed to create cache file: %v", err)
 		}

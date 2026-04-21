@@ -8,7 +8,7 @@ import (
 
 type MD5LikeShop2021Algo struct{}
 
-func (a *MD5LikeShop2021Algo) Name() string { return "md5($pass.md5(y.$salt.x).2021)" }
+func (a *MD5LikeShop2021Algo) Name() string { return "md5_custom_likeshop_2021" }
 
 func (a *MD5LikeShop2021Algo) GetAlgoType() types.AlgoType { return types.AlgoIsStatic }
 

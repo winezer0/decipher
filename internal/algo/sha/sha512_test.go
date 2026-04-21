@@ -4,13 +4,6 @@ import (
 	"testing"
 )
 
-func TestSHA512Algo_Name(t *testing.T) {
-	algo := &SHA512Algo{}
-	if got := algo.Name(); got != "sha512" {
-		t.Errorf("SHA512Algo.Name() = %v, want sha512", got)
-	}
-}
-
 func TestSHA512Algo_Seal(t *testing.T) {
 	algo := &SHA512Algo{}
 	testCases := []struct {

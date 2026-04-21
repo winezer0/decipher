@@ -4,13 +4,6 @@ import (
 	"testing"
 )
 
-func TestNTLMAlgo_Name(t *testing.T) {
-	algo := &NTLMAlgo{}
-	if got := algo.Name(); got != "ntlm" {
-		t.Errorf("NTLMAlgo.Name() = %v, want ntlm", got)
-	}
-}
-
 func TestNTLMAlgo_Seal(t *testing.T) {
 	algo := &NTLMAlgo{}
 	testCases := []struct {

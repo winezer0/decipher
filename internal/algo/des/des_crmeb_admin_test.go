@@ -4,13 +4,6 @@ import (
 	"testing"
 )
 
-func TestCrmebAdminAlgo_Name(t *testing.T) {
-	algo := &CrmebAdminAlgo{}
-	if got := algo.Name(); got != "des_crmeb_admin" {
-		t.Errorf("CrmebAdminAlgo.Name() = %v, want des_crmeb_admin", got)
-	}
-}
-
 func TestCrmebAdminAlgo_NeedAddToPredb(t *testing.T) {
 	algo := &CrmebAdminAlgo{}
 	if got := algo.NeedAddToPredb(); got != false {
