@@ -162,6 +162,7 @@ func TestRunLocalCrack(t *testing.T) {
 		}
 	})
 
+	findAlgos := algo.GetAlgorithmsByKeys([]string{"md5"}, false)
 	t.Run("SuccessfulCrack", func(t *testing.T) {
 		tempDir := t.TempDir()
 
@@ -175,7 +176,7 @@ func TestRunLocalCrack(t *testing.T) {
 		targets := []HashSaltTarget{{Hash: "e10adc3949ba59abbe56e057f20f883e", Salt: ""}}
 
 		engine.PredbDir = tempDir
-		results := engine.RunPredbCrack(targets, algo.GetAlgorithmsByKeys([]string{"md5"}))
+		results := engine.RunPredbCrack(targets, findAlgos)
 
 		if len(results) != 1 {
 			t.Errorf("Expected 1 result, got %d", len(results))
@@ -210,7 +211,7 @@ func TestRunLocalCrack(t *testing.T) {
 		}
 
 		engine.PredbDir = tempDir
-		results := engine.RunPredbCrack(targets, algo.GetAlgorithmsByKeys([]string{"md5"}))
+		results := engine.RunPredbCrack(targets, findAlgos)
 
 		if len(results) != 1 {
 			t.Errorf("Expected 1 result (md5 only), got %d", len(results))

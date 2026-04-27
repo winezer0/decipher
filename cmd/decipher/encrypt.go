@@ -29,13 +29,13 @@ func encryptAction(engine *cracker.Engine, opts *Options) error {
 	}
 
 	// 过滤用户想要使用的算法selectedAlgos，为空时使用所有，通过关键字匹配
-	algos := algo.GetAlgorithmsByKeys(opts.AlgoKeys)
-	if len(algos) == 0 {
+	findAlgos := algo.GetAlgorithmsByKeys(opts.AlgoKeys, opts.AlgosPrecise)
+	if len(findAlgos) == 0 {
 		return fmt.Errorf("no algorithms be selected")
 	}
 
 	// 进行加密
-	encryptRes := engine.RunEncrypt(plainDicts, secretDicts, algos)
+	encryptRes := engine.RunEncrypt(plainDicts, secretDicts, findAlgos)
 	// 少量结果直接输出到控制台中
 	if len(encryptRes) <= len(algo.GetAllAlgorithms()) {
 		for _, res := range encryptRes {

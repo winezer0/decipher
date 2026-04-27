@@ -83,14 +83,20 @@ func GetAlgorithmNames(algos []Algorithm) []string {
 // 使用 utils.StringHasOneKey 检查算法名称是否包含任意一个关键字
 // 如果 keys 为空列表或 nil，返回所有算法
 // ignoreCase 为 true 时忽略大小写匹配
-func GetAlgorithmsByKeys(keys []string) []Algorithm {
+func GetAlgorithmsByKeys(keys []string, precise bool) []Algorithm {
 	if len(keys) == 0 {
 		return GetAllAlgorithms()
 	}
 	var algos []Algorithm
 	for _, alg := range GetAllAlgorithms() {
-		if utils.StringHasOneKey(alg.Name(), keys, true) {
-			algos = append(algos, alg)
+		if precise {
+			if utils.StringInStrings(alg.Name(), keys, true) {
+				algos = append(algos, alg)
+			}
+		} else {
+			if utils.StringHasOneKey(alg.Name(), keys, true) {
+				algos = append(algos, alg)
+			}
 		}
 	}
 	return algos

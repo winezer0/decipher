@@ -8,6 +8,7 @@ import (
 
 func main() {
 	opts, _ := InitOptionsArgs(1)
+	defer logging.Sync()
 
 	// 解析操作类型
 	var modeTypes []cracker.ModeType

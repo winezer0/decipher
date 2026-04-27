@@ -16,7 +16,7 @@ import (
 
 const (
 	AppName      = "decipher"
-	AppVersion   = "0.1.1"
+	AppVersion   = "0.1.2"
 	BuildDate    = "2026-04-27"
 	AppShortDesc = "common hash fast cracker"
 	AppLongDesc  = "common hash fast cracker"
@@ -38,7 +38,8 @@ type Options struct {
 	PassSuffix  string   `long:"ps" description:"Suffix to be appended to passwd before use" default:""`
 
 	// 实际使用的算法，为空时使用所有算法
-	AlgoKeys []string `short:"a" long:"algos" description:"Keywords used for algos filtering (e.g. md5)"`
+	AlgoKeys     []string `short:"a" long:"algos" description:"Keywords used for algos filtering (e.g. md5) "`
+	AlgosPrecise bool     `short:"A" long:"precise" description:"Precise matching algos filtering keywords"`
 
 	// 性能配置
 	Workers int `short:"w" long:"workers" description:"Number of concurrent workers for cache generation" default:"0"`
@@ -102,11 +103,10 @@ func InitOptionsArgs(minimumParams int) (*Options, *flags.Parser) {
 
 	// 初始化日志记录起
 	logCfg := logging.NewLogConfig(opts.LogLevel, opts.LogFile, opts.ConsoleFormat)
-	if err := logging.InitLogger(logCfg); err != nil {
+	if err := logging.InitDefaultLogger(logCfg); err != nil {
 		fmt.Printf("Failed to initialize logger: %v\n", err)
 		os.Exit(1)
 	}
-	defer logging.Sync()
 
 	// 列出当前所有已经实现的加密算法
 	if opts.ListAlgos {

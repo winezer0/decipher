@@ -50,8 +50,8 @@ func decryptAction(engine *cracker.Engine, opts *Options) error {
 	}
 
 	// 过滤用户想要使用的算法selectedAlgos，为空时使用所有，通过关键字匹配
-	algos := algo.GetAlgorithmsByKeys(opts.AlgoKeys)
-	if len(algos) == 0 {
+	findAlgos := algo.GetAlgorithmsByKeys(opts.AlgoKeys, opts.AlgosPrecise)
+	if len(findAlgos) == 0 {
 		return fmt.Errorf("no algorithms be selected")
 	}
 
@@ -80,7 +80,7 @@ func decryptAction(engine *cracker.Engine, opts *Options) error {
 	failedTargetsMap := cracker.ConvertTargetsToMap(targets)
 
 	// 2. 使用预计算缓存算法进行破解（predb）
-	preDbAlgos := algo.FilterNeedAddToPredbAlogs(algos)
+	preDbAlgos := algo.FilterNeedAddToPredbAlogs(findAlgos)
 	if len(failedTargetsMap) > 0 && len(preDbAlgos) > 0 {
 		if !opts.NoPredbCrack {
 			// 2. 使用预计算缓存进行破解（predb）
@@ -116,7 +116,7 @@ func decryptAction(engine *cracker.Engine, opts *Options) error {
 	}
 
 	// 4. 使用静态/动态哈希进行字典破解
-	notPredbAlgos := algo.FilterNotNeedAddToPredbAlogs(algos)
+	notPredbAlgos := algo.FilterNotNeedAddToPredbAlogs(findAlgos)
 	if len(failedTargetsMap) > 0 && len(notPredbAlgos) > 0 {
 		// 4.1 静态哈希（计算速度快）
 		staticAlgos := algo.FilterStaticAlgorithms(notPredbAlgos)

@@ -5,7 +5,7 @@ go 1.25.5
 require (
 	github.com/jessevdk/go-flags v1.6.1
 	github.com/schollz/progressbar/v3 v3.19.0
-	github.com/winezer0/xutils v0.2.6
+	github.com/winezer0/xutils v0.2.7
 	golang.org/x/crypto v0.50.0
 	golang.org/x/text v0.36.0
 )

@@ -49,7 +49,8 @@ func addedAction(engine *cracker.Engine, opts *Options) error {
 
 	// 3. 基于用户输入的字典生成或更新 predb
 	// 过滤静态算法和需要进行predb生成的算法
-	predbAlogs := algo.FilterNeedAddToPredbAlogs(algo.GetAlgorithmsByKeys(opts.AlgoKeys))
+	findAlgos := algo.GetAlgorithmsByKeys(opts.AlgoKeys, opts.AlgosPrecise)
+	predbAlogs := algo.FilterNeedAddToPredbAlogs(findAlgos)
 	if err := engine.CreatePredb(plainFiles, secretFiles, predbAlogs); err != nil {
 		logging.Errorf("Failed to create/update predb: %v", err)
 		return err
