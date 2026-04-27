@@ -16,7 +16,7 @@ import (
 
 const (
 	AppName      = "decipher"
-	AppVersion   = "0.1.0"
+	AppVersion   = "0.1.1"
 	BuildDate    = "2026-04-27"
 	AppShortDesc = "common hash fast cracker"
 	AppLongDesc  = "common hash fast cracker"
