@@ -1,7 +1,11 @@
 package cracker
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 
 	"github.com/winezer0/xutils/logging"
@@ -9,77 +13,127 @@ import (
 )
 
 func ParseFilesToTargets(hashesFiles []string) []HashSaltTarget {
-	var targets []HashSaltTarget
-	lines := ReadFilesToStrings(hashesFiles, false)
-	for _, line := range lines {
+	return readDictionaryFiles(hashesFiles, func(line string) (HashSaltTarget, bool) {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
-			continue
+			return HashSaltTarget{}, false
 		}
-		var hash, salt string
-		var err error
-		if strings.Contains(line, ConcatSymbol) {
-			// 允许 hash/hash|salt/hash|salt|xxx 格式自定义字符串 也只取前面两节用于解密
-			hash, salt, _, err = ParseHashLine(line, ConcatSymbol)
-			if err != nil {
-				continue
+		separator := ConcatSymbol
+		if !strings.Contains(line, separator) {
+			separator = ":"
+		}
+		if separator == "" {
+			// 空分隔符保留 strings.Split 按 UTF-8 序列拆分的原有语义。
+			hash, salt, _, _ := ParseHashLine(line, separator)
+			return HashSaltTarget{Hash: hash, Salt: salt}, hash != ""
+		}
+		hash, rest, hasSalt := strings.Cut(line, separator)
+		if hash == "" {
+			return HashSaltTarget{}, false
+		}
+		var salt string
+		if hasSalt {
+			var tail string
+			salt, tail, _ = strings.Cut(rest, separator)
+			// 大块的多余字段不应被 hash/salt 子串长期保留；短行避免额外复制。
+			if len(tail) > len(hash)+len(salt) {
+				prefix := strings.Clone(line[:len(hash)+len(separator)+len(salt)])
+				hash, salt = prefix[:len(hash)], prefix[len(hash)+len(separator):]
 			}
-		} else {
-			// 允许 hash/hash:salt/hash:salt:xxx 格式常见字符串 但是只取前面两节
-			hash, salt, _, err = ParseHashLine(line, ":")
-			if err != nil {
-				continue
-			}
 		}
-		if hash != "" {
-			targets = append(targets, HashSaltTarget{Hash: hash, Salt: salt})
-		}
-	}
-	return targets
+		return HashSaltTarget{Hash: hash, Salt: salt}, true
+	})
 }
 
 // ReadFilesToStrings 返回字符串的列表
 func ReadFilesToStrings(inputs []string, trims bool) []string {
-	var finalLines []string
-	for _, path := range inputs {
-		// 加载 Input，可能是文件或字符串
-		var lines []string
-		var err error
-		if utils.FileExists(path) {
-			lines, err = utils.ReadFileToList(path, true, true)
-			if err != nil {
-				logging.Warnf("file is load error: %s: %v", path, err)
-				continue
-			}
-		} else {
-			logging.Warnf("file is not exists: %s", path)
+	return readDictionaryFiles(inputs, func(line string) (string, bool) {
+		if trims {
+			line = strings.TrimSpace(line)
 		}
-		for _, line := range lines {
-			if trims {
-				line = strings.TrimSpace(line)
+		return line, line != ""
+	})
+}
+
+// 该上限与原 xutils.ReadFileToList 一致，独立于破解任务的 1 MB 行长上限。
+const maxDictionaryTokenSize = 10 * 1024 * 1024
+
+// readDictionaryFiles 直接收集最终类型，避免每个文件的中间字符串列表。
+func readDictionaryFiles[T any](inputs []string, parse func(string) (T, bool)) []T {
+	var values []T
+	for _, path := range inputs {
+		if !utils.FileExists(path) {
+			logging.Warnf("file is not exists: %s", path)
+			continue
+		}
+		checkpoint := values
+		err := readDictionaryFile(path, func(line string) {
+			if value, ok := parse(line); ok {
+				values = append(values, value)
 			}
-			if line != "" {
-				finalLines = append(finalLines, line)
-			}
+		})
+		if err != nil {
+			// 原接口丢弃失败文件的全部内容；同时清除尾部引用并保留 nil 语义。
+			clear(values[len(checkpoint):])
+			clear(checkpoint[len(checkpoint):cap(checkpoint)])
+			values = checkpoint
+			logging.Warnf("file is load error: %s: %v", path, err)
 		}
 	}
-	return finalLines
+	return values
+}
+
+func readDictionaryFile(path string, emit func(string)) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	return scanDictionaryLines(file, emit)
+}
+
+func scanDictionaryLines(reader io.Reader, emit func(string)) error {
+	scanner := bufio.NewScanner(reader)
+	scanner.Buffer(make([]byte, DefaultScannerBufferSize), maxDictionaryTokenSize)
+	for scanner.Scan() {
+		// 先在扫描缓冲区裁剪，避免为行两端的大量空白分配字符串。
+		line := cleanDictionaryLine(string(bytes.TrimSpace(scanner.Bytes())))
+		if line != "" {
+			emit(line)
+		}
+	}
+	return scanner.Err()
+}
+
+func cleanDictionaryLine(line string) string {
+	// 保持 xutils.CleanupUnprintableChars 的范围；干净字符串直接复用原值。
+	// strings.Map 同时保留原实现将无效 UTF-8 转换为 U+FFFD 的行为。
+	return strings.Map(func(r rune) rune {
+		if r <= 0x001f || (r >= 0x007f && r <= 0x009f) || (r >= 0x2000 && r <= 0x200f) {
+			return -1
+		}
+		return r
+	}, line)
 }
 
 func ParseHashLine(line, concatSymbol string) (string, string, string, error) {
-	parts := strings.Split(line, concatSymbol)
-	var hash, salt, plain string
-	if len(strings.TrimSpace(line)) == 0 || len(parts) == 0 {
+	if len(strings.TrimSpace(line)) == 0 {
 		return "", "", "", fmt.Errorf("empty hash line: %s", line)
 	}
-	if len(parts) > 0 {
-		hash = parts[0]
+	if concatSymbol == "" {
+		parts := strings.Split(line, concatSymbol)
+		var fields [3]string
+		copy(fields[:], parts)
+		return fields[0], fields[1], fields[2], nil
 	}
-	if len(parts) > 1 {
-		salt = parts[1]
+	hash, rest, hasSalt := strings.Cut(line, concatSymbol)
+	if !hasSalt {
+		return hash, "", "", nil
 	}
-	if len(parts) > 2 {
-		plain = parts[2]
+	salt, rest, hasPlain := strings.Cut(rest, concatSymbol)
+	if !hasPlain {
+		return hash, salt, "", nil
 	}
+	plain, _, _ := strings.Cut(rest, concatSymbol)
 	return hash, salt, plain, nil
 }
