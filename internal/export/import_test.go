@@ -1,6 +1,7 @@
 package export
 
 import (
+	"decipher/internal/cracker"
 	"os"
 	"path/filepath"
 	"testing"
@@ -19,7 +20,10 @@ func TestLoadSuccessCacheMap(t *testing.T) {
 	}
 
 	// Test loading
-	cracked := LoadSuccessCacheMap(cacheFile)
+	cracked := LoadSuccessCacheMap(cacheFile, []cracker.HashSaltTarget{
+		{Hash: "e10adc3949ba59abbe56e057f20f883e"},
+		{Hash: "5d41402abc4b2a76b9719d911017c592"},
+	})
 
 	if len(cracked) != 2 {
 		t.Errorf("Expected 2 cached results, got %d", len(cracked))
@@ -51,7 +55,7 @@ func TestLoadSuccessCacheMap(t *testing.T) {
 }
 
 func TestLoadSuccessCacheMap_NonExistent(t *testing.T) {
-	cracked := LoadSuccessCacheMap("non_existent_file.csv")
+	cracked := LoadSuccessCacheMap("non_existent_file.csv", []cracker.HashSaltTarget{{Hash: "missing"}})
 	if len(cracked) != 0 {
 		t.Errorf("Expected empty map for non-existent file, got %d entries", len(cracked))
 	}
@@ -64,7 +68,7 @@ func TestLoadSuccessCacheMap_Empty(t *testing.T) {
 		t.Fatalf("Failed to create empty file: %v", err)
 	}
 
-	cracked := LoadSuccessCacheMap(cacheFile)
+	cracked := LoadSuccessCacheMap(cacheFile, []cracker.HashSaltTarget{{Hash: "missing"}})
 	if len(cracked) != 0 {
 		t.Errorf("Expected empty map for empty file, got %d entries", len(cracked))
 	}

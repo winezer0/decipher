@@ -69,7 +69,7 @@ func decryptAction(engine *cracker.Engine, opts *Options) (err error) {
 	var allResults []cracker.CrackerResult
 
 	// 1. 过滤已破解的密文或者哈希
-	crackedHashes := export.LoadSuccessCacheMap(engine.GetSuccessCachePath())
+	crackedHashes := export.LoadSuccessCacheMap(engine.GetSuccessCachePath(), basicTargets)
 	var targets []cracker.HashSaltTarget
 	if len(crackedHashes) > 0 {
 		for _, target := range basicTargets {
@@ -77,7 +77,7 @@ func decryptAction(engine *cracker.Engine, opts *Options) (err error) {
 				fmt.Printf("\n[+] Success! Result Cached: %s\n", target.Hash)
 				fmt.Printf("    Plain    : %s\n\n", cached.Plaintext)
 
-				allResults = append(allResults, cached)
+				allResults = append(allResults, *cached)
 				continue
 			}
 			targets = append(targets, target)
