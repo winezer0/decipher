@@ -1,6 +1,7 @@
 package cracker
 
 import (
+	"context"
 	"decipher/internal/algo"
 	"strings"
 	"sync"
@@ -31,6 +32,19 @@ func (e *Engine) RunEncrypt(plainDicts []string, secretDicts []string, algos []a
 
 // RunEncryptResults 保留各字段的原始边界，供 CSV/JSON 序列化使用。
 func (e *Engine) RunEncryptResults(plainDicts []string, secretDicts []string, algos []algo.Algorithm) []EncryptResult {
+	results := make([]EncryptResult, 0)
+	_ = e.RunEncryptStream(plainDicts, secretDicts, algos, func(result EncryptResult) error {
+		results = append(results, result)
+		return nil
+	})
+	return results
+}
+
+// RunEncryptStream 串行交付并发计算的结果；消费失败后取消任务并等待生产者和计算协程退出。
+// 结果顺序与原收集接口一致，取决于并发任务的完成顺序。算法计算失败仍跳过该任务。
+func (e *Engine) RunEncryptStream(plainDicts []string, secretDicts []string, algos []algo.Algorithm, emit func(EncryptResult) error) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	// 加载文件到列表
 	texts := ReadFilesToStrings(plainDicts, false)
 
@@ -63,40 +77,38 @@ func (e *Engine) RunEncryptResults(plainDicts []string, secretDicts []string, al
 		go func() {
 			defer wg.Done()
 			for j := range jobs {
+				if ctx.Err() != nil {
+					return
+				}
 				hash, err := j.alg.Seal(e.AffixPasswd(j.text), e.AffixSalt(j.salt))
 				if err != nil {
 					// 加密失败，跳过此任务
 					continue
 				}
-				resultsChan <- EncryptResult{Algorithm: j.alg.Name(), Hash: hash, Salt: j.salt, Plaintext: j.text}
+				select {
+				case resultsChan <- EncryptResult{Algorithm: j.alg.Name(), Hash: hash, Salt: j.salt, Plaintext: j.text}:
+				case <-ctx.Done():
+					return
+				}
 			}
 		}()
 	}
 
 	// Producer
+	producerDone := make(chan struct{})
 	go func() {
+		defer close(producerDone)
 		defer close(jobs)
+		send := func(j job) bool {
+			select {
+			case jobs <- j:
+				return true
+			case <-ctx.Done():
+				return false
+			}
+		}
 
-		// 简单的流式处理：对每个算法，每个文本，遍历一次 Salt 流
-		// 如果文本很多，Salt 流很大，这里会很慢。
-		// 但 Encrypt 模式通常用于测试或生成数据，量级可能不如 Crack 模式大。
-		// 仍然建议分批处理。
-
-		// 缓存一部分 Salt 以减少生成开销？
-		// 或者直接流式遍历。
-
-		// 这里的逻辑：
-		// 遍历算法 -> 遍历文本 -> 遍历 Salt
-		// 为了复用 Salt 流，我们可以把算法和文本放在内层？
-		// 遍历 Salt -> 遍历算法 -> 遍历文本
-		// 这样只需要生成一次 Salt 流。
-		// 但是 SaltProvider 可能无限？(e.g. random count very large)
-		// 无论如何都要遍历完 Salt。
-
-		// 优化：一次性读取所有文本（假设不大），然后流式读取 Salt，对每个 Salt，生成 (Alg, Text) 组合。
-		// 但是如果有些算法不需要 Salt，就不应该遍历 Salt 流。
-
-		// 分离需要 Salt 和不需要 Salt 的算法
+		// 明文加载一次；无盐算法运行一次，有盐算法复用同一条盐流。
 		var needSaltAlgos []algo.Algorithm
 		var noSaltAlgos []algo.Algorithm
 		for _, a := range algos {
@@ -110,23 +122,26 @@ func (e *Engine) RunEncryptResults(plainDicts []string, secretDicts []string, al
 		// 1. 处理不需要 Salt 的算法
 		for _, alg := range noSaltAlgos {
 			for _, text := range texts {
-				jobs <- job{text: text, salt: "", alg: alg}
+				if !send(job{text: text, salt: "", alg: alg}) {
+					return
+				}
 			}
 		}
 
 		// 2. 处理需要 Salt 的算法
 		if len(needSaltAlgos) > 0 {
-			// 如果没有提供 Salt，使用空 Salt (与测试行为一致)
-			// 测试 "Single text, no salt" 期望 md5($salt.$pass) 在无 salt 时运行一次
-			// 如果 saltProvider 是空的 (initSaltProviders 返回 empty list)，它已经被设置为 NewMemorySaltProvider([]string{""})
-			// 所以 saltStream 将生成一个空字符串。
-
-			// 注意：saltProvider.GenerateStream(nil)
-			saltStream := saltProvider.GenerateStream(nil)
+			saltStream := saltProvider.GenerateStream(ctx.Done())
+			// 部分提供者在发送前检查取消信号；排空通道以释放已阻塞的发送。
+			defer func() {
+				for range saltStream {
+				}
+			}()
 			for salt := range saltStream {
 				for _, alg := range needSaltAlgos {
 					for _, text := range texts {
-						jobs <- job{text: text, salt: salt, alg: alg}
+						if !send(job{text: text, salt: salt, alg: alg}) {
+							return
+						}
 					}
 				}
 			}
@@ -140,10 +155,15 @@ func (e *Engine) RunEncryptResults(plainDicts []string, secretDicts []string, al
 	}()
 
 	// Collector
-	results := make([]EncryptResult, 0)
+	var emitErr error
 	for res := range resultsChan {
-		results = append(results, res)
+		if emitErr == nil {
+			emitErr = emit(res)
+			if emitErr != nil {
+				cancel()
+			}
+		}
 	}
-
-	return results
+	<-producerDone
+	return emitErr
 }

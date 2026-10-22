@@ -45,6 +45,9 @@ func (p *MultiSaltProvider) GenerateStream(ctxDone <-chan struct{}) <-chan strin
 				// 直接输出，允许重复以换取内存安全
 				select {
 				case <-ctxDone:
+					// 释放当前提供者可能已经阻塞的发送及其文件资源。
+					for range ch {
+					}
 					return
 				case out <- salt:
 				}

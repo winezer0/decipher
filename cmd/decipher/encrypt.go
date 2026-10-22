@@ -5,6 +5,7 @@ import (
 	"decipher/internal/cracker"
 	"decipher/internal/export"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/winezer0/xutils/logging"
@@ -43,15 +44,52 @@ func encryptAction(engine *cracker.Engine, opts *Options) (err error) {
 	}
 
 	// 进行加密
-	encryptRes := engine.RunEncryptResults(plainDicts, secretDicts, findAlgos)
-	// 少量结果直接输出到控制台中
-	if len(encryptRes) <= len(algo.GetAllAlgorithms()) {
-		for _, res := range encryptRes {
-			fmt.Println(res)
+	// 只保留可展示的小结果集，输出文件始终流式写入。
+	previewLimit := len(algo.GetAllAlgorithms())
+	preview := make([]cracker.EncryptResult, 0, previewLimit)
+	showPreview := true
+	outputFile := filepath.Join(opts.Output, fmt.Sprintf("%s.enc.%s", AppName, opts.OutputType))
+	if err := checkEncryptOutputInputs(outputFile, plainDicts, secretDicts); err != nil {
+		return err
+	}
+	err = export.ExportEncryptStream(outputFile, opts.OutputType, func(emit func(cracker.EncryptResult) error) error {
+		return engine.RunEncryptStream(plainDicts, secretDicts, findAlgos, func(result cracker.EncryptResult) error {
+			if showPreview {
+				if len(preview) < previewLimit {
+					preview = append(preview, result)
+				} else {
+					showPreview = false
+					preview = nil
+				}
+			}
+			return emit(result)
+		})
+	})
+	if err != nil {
+		return err
+	}
+	for _, result := range preview {
+		fmt.Println(result)
+	}
+	return nil
+}
+
+// 流式写入前拒绝覆盖输入字典（包括硬链接和符号链接），避免读取过程中截断源文件。
+func checkEncryptOutputInputs(output string, inputs ...[]string) error {
+	info, err := os.Stat(output)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	for _, paths := range inputs {
+		for _, path := range paths {
+			input, err := os.Stat(path)
+			if err == nil && os.SameFile(info, input) {
+				return fmt.Errorf("encryption output is also an input dictionary: %s", path)
+			}
 		}
 	}
-
-	// 写入解密结果到文件中，方便用户进行预览
-	outputFile := filepath.Join(opts.Output, fmt.Sprintf("%s.enc.%s", AppName, opts.OutputType))
-	return export.ExportEncrypt(outputFile, encryptRes, opts.OutputType)
+	return nil
 }
