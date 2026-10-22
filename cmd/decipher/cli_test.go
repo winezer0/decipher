@@ -170,7 +170,7 @@ func TestCLICacheWriteErrorsAreFailures(t *testing.T) {
 	for _, cache := range []string{"success", "failure"} {
 		t.Run(cache, func(t *testing.T) {
 			dir := t.TempDir()
-			args := []string{"dec", "-i", "str:" + testHash, "-a", "md5($pass)", "-A", "--npc", "--nhc"}
+			args := []string{"dec", "-i", "str:" + testHash, "-a", "md5($pass)", "-A", "--npc"}
 			if cache == "success" {
 				if err := os.MkdirAll(filepath.Join(dir, "decipher_db", "success.cache"), 0755); err != nil {
 					t.Fatal(err)

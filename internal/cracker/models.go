@@ -31,20 +31,6 @@ func (res *CrackerResult) CalcHash() string {
 	return unique
 }
 
-func (res *CrackerResult) GetKeywords() string {
-	element := []string{res.Algorithm, res.Plaintext, res.Salt}
-	unique := strings.Join(element, ConcatSymbol)
-	return unique
-}
-
-func ParseRecoverKey(value string) (algo, plain, salt string) {
-	parts := strings.SplitN(value, ConcatSymbol, 3)
-	if len(parts) == 3 {
-		return parts[0], parts[1], parts[2]
-	}
-	return "", "", ""
-}
-
 func LoadTargetsFromMap(raws map[string]HashSaltTarget) []HashSaltTarget {
 	var news []HashSaltTarget
 	for _, t := range raws {

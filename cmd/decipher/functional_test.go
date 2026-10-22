@@ -184,9 +184,9 @@ func TestCLIPredbThenDecryptAndCachedResult(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	out = requireCLISuccess(t, dir, "dec", "-i", "str:"+hash, "-p", "str:wrong-again", "-a", "md5($pass)", "-A", "--npc", "--nhc", "-O", "json", "-R")
+	out = requireCLISuccess(t, dir, "dec", "-i", "str:"+hash, "-p", "str:wrong-again", "-a", "md5($pass)", "-A", "--npc", "-O", "json", "-R")
 	if !strings.Contains(out, "Result Cached") {
-		t.Fatalf("success cache was not used with --nhc: %s", out)
+		t.Fatalf("success cache was not used: %s", out)
 	}
 	results = readJSONResults[cracker.CrackerResult](t, dir, "decipher.dec.json")
 	if len(results) != 1 || results[0].Plaintext != plain {

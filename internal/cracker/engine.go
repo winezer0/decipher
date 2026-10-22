@@ -9,8 +9,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/winezer0/xutils/hashutils"
-
 	"github.com/winezer0/xutils/logging"
 	"github.com/winezer0/xutils/utils"
 )
@@ -34,7 +32,7 @@ var (
 type Engine struct {
 	workers     int
 	PredbDir    string // predb目录
-	RunCacheDir string // hash计算和解密的缓存目录
+	RunCacheDir string // 临时字典目录
 	PassPrefix  string
 	PassSuffix  string
 	SaltPrefix  string
@@ -88,19 +86,6 @@ func (e *Engine) IsEmptyPredbDir() bool {
 // GetSuccessCachePath 获取程序对应的成功结果缓存记录
 func (e *Engine) GetSuccessCachePath() string {
 	return filepath.Join(e.PredbDir, SuccessCache)
-}
-
-// GetRuntimeCachePath 获取运行时缓存路径
-// 该路径用于存储针对特定哈希值和算法组合的缓存信息
-// hash: 目标哈希值
-// algos: 使用的算法列表
-func (e *Engine) GetRuntimeCachePath(hash string, algos []algo.Algorithm) string {
-	algosnames := algo.GetAlgorithmNames(algos)
-	algosStr := strings.Join(utils.SortSlice(algosnames), "/")
-	alogsHash := hashutils.GetStrHash(algosStr)
-	name := fmt.Sprintf("%s.%s.cache", hashutils.GetStrHashShort(hash), alogsHash)
-	cachePath := filepath.Join(e.RunCacheDir, name)
-	return cachePath
 }
 
 func (e *Engine) GetBuiltinPlainPath() string {

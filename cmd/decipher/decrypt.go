@@ -116,7 +116,7 @@ func decryptAction(engine *cracker.Engine, opts *Options) (err error) {
 			if len(failedTargetsMap) > 0 && len(preDbAlgos) > 0 {
 				residue := cracker.LoadTargetsFromMap(failedTargetsMap)
 				logging.Infof("Starting predb algos crack for %d targets using %d algos...", len(residue), len(preDbAlgos))
-				results := engine.RunHashCrack(residue, plainFiles, secretDicts, preDbAlgos, opts.NohashCache)
+				results := engine.RunHashCrack(residue, plainFiles, secretDicts, preDbAlgos)
 				for _, res := range results {
 					delete(failedTargetsMap, res.Hash)
 					allResults = append(allResults, res)
@@ -137,7 +137,7 @@ func decryptAction(engine *cracker.Engine, opts *Options) (err error) {
 		if len(failedTargetsMap) > 0 && len(staticAlgos) > 0 {
 			residue := cracker.LoadTargetsFromMap(failedTargetsMap)
 			logging.Infof("Starting static crack for %d targets using %d algos...", len(residue), len(staticAlgos))
-			results := engine.RunHashCrack(residue, plainFiles, secretDicts, staticAlgos, opts.NohashCache)
+			results := engine.RunHashCrack(residue, plainFiles, secretDicts, staticAlgos)
 			for _, res := range results {
 				delete(failedTargetsMap, res.Hash)
 				allResults = append(allResults, res)
@@ -153,7 +153,7 @@ func decryptAction(engine *cracker.Engine, opts *Options) (err error) {
 		if len(failedTargetsMap) > 0 && len(dynamicAlgos) > 0 && !opts.NoDynaCrack {
 			residue := cracker.LoadTargetsFromMap(failedTargetsMap)
 			logging.Infof("Starting dynamic crack for %d targets using %d algos...", len(residue), len(dynamicAlgos))
-			results := engine.RunHashCrack(residue, plainFiles, secretDicts, dynamicAlgos, opts.NohashCache)
+			results := engine.RunHashCrack(residue, plainFiles, secretDicts, dynamicAlgos)
 			for _, res := range results {
 				delete(failedTargetsMap, res.Hash)
 				allResults = append(allResults, res)

@@ -5,13 +5,10 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/winezer0/xutils/progress"
-
-	"github.com/winezer0/xutils/cacher"
 
 	"github.com/winezer0/xutils/logging"
 
@@ -20,7 +17,7 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
-func (e *Engine) RunHashCrack(targets []HashSaltTarget, plainFiles []string, secretFiles []string, hashAlgos []algo.Algorithm, nohashCache bool) []CrackerResult {
+func (e *Engine) RunHashCrack(targets []HashSaltTarget, plainFiles []string, secretFiles []string, hashAlgos []algo.Algorithm) []CrackerResult {
 	var allResults []CrackerResult
 	if len(targets) == 0 {
 		return allResults
@@ -78,7 +75,7 @@ func (e *Engine) RunHashCrack(targets []HashSaltTarget, plainFiles []string, sec
 		}
 
 		// 使用新的流式 Salt 处理方法
-		crackerResults := e.runHashCrackWithDictStream(targets, hashAlgos, saltProviders, reader, startTime, nohashCache, bar)
+		crackerResults := e.runHashCrackWithDictStream(targets, hashAlgos, saltProviders, reader, startTime, bar)
 		for _, res := range crackerResults {
 			allResults = append(allResults, res)
 
@@ -110,7 +107,7 @@ type crackStrategy struct {
 	anyNeedsSalt bool
 }
 
-func (e *Engine) runHashCrackWithDictStream(hashSaltTargets []HashSaltTarget, algos []algo.Algorithm, saltProviders []SaltProvider, reader io.Reader, startTime time.Time, nohashCache bool, bar *progressbar.ProgressBar) []CrackerResult {
+func (e *Engine) runHashCrackWithDictStream(hashSaltTargets []HashSaltTarget, algos []algo.Algorithm, saltProviders []SaltProvider, reader io.Reader, startTime time.Time, bar *progressbar.ProgressBar) []CrackerResult {
 	var results []CrackerResult
 	var mu sync.Mutex
 
@@ -159,29 +156,12 @@ func (e *Engine) runHashCrackWithDictStream(hashSaltTargets []HashSaltTarget, al
 		}
 	}
 
-	// 初始化运行时缓存管理器 map
-	cacheManagers := make(map[string]*cacher.CacheManager)
-	for _, target := range hashSaltTargets {
-		if _, exists := cacheManagers[target.Hash]; exists {
-			continue
-		}
-
-		cachePath := ""
-		if !nohashCache {
-			cachePath = e.GetRuntimeCachePath(target.Hash, algos)
-		}
-
-		hashCM := cacher.NewCacheManager(cachePath)
-		cacheManagers[target.Hash] = hashCM
-		defer hashCM.Close()
-	}
-
 	// 启动 Workers
 	for i := 0; i < e.workers; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			e.crackWorker(ctx, taskChan, resultChan, hashSaltTargets, targetStrategies, cacheManagers)
+			e.crackWorker(ctx, taskChan, resultChan, hashSaltTargets, targetStrategies)
 		}()
 	}
 
@@ -200,9 +180,4 @@ func (e *Engine) runHashCrackWithDictStream(hashSaltTargets []HashSaltTarget, al
 	}
 
 	return results
-}
-
-func genCachedKey(plain string, salt string) string {
-	element := []string{salt, plain}
-	return strings.Join(element, ConcatSymbol)
 }

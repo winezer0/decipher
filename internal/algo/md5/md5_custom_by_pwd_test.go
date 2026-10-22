@@ -5,12 +5,12 @@ import (
 	"testing"
 )
 
-func TestMD5CustomMssAlgo(t *testing.T) {
-	algo := &MD5CustomMssAlgo{}
+func TestMD5CustomByPwdAlgo(t *testing.T) {
+	algo := &MD5CustomByPwdAlgo{}
 
 	// Test Name
-	if got := algo.Name(); got != "md5_custom_mss" {
-		t.Errorf("Name() = %q; want %q", got, "md5_custom_mss")
+	if got := algo.Name(); got != "md5_custom_by_pwd" {
+		t.Errorf("Name() = %q; want %q", got, "md5_custom_by_pwd")
 	}
 
 	// Test GetAlgoType

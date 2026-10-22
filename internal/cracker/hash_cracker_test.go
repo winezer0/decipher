@@ -53,7 +53,7 @@ func TestRunDynamicCrack_SupportSecretsFile(t *testing.T) {
 	engine := NewEngine(2, "", "")
 
 	targets := []HashSaltTarget{{Hash: "HASH", Salt: ""}}
-	results := engine.RunHashCrack(targets, []string{dictPath}, []string{secretPath}, []algo.Algorithm{&mockDynamicSaltAlgo{}}, false)
+	results := engine.RunHashCrack(targets, []string{dictPath}, []string{secretPath}, []algo.Algorithm{&mockDynamicSaltAlgo{}})
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
 	}
@@ -84,7 +84,7 @@ func TestRunDynamicCrack_UsesTargetSaltWhenPresent(t *testing.T) {
 	engine := NewEngine(2, "", "")
 
 	targets := []HashSaltTarget{{Hash: "HASH", Salt: "mysalt"}}
-	results := engine.RunHashCrack(targets, []string{dictPath}, []string{"wrong"}, []algo.Algorithm{&mockDynamicSaltAlgo{}}, false)
+	results := engine.RunHashCrack(targets, []string{dictPath}, []string{"wrong"}, []algo.Algorithm{&mockDynamicSaltAlgo{}})
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
 	}

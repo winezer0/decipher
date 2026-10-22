@@ -108,11 +108,10 @@ type TemporaryOptions struct {
 type CrackOptions struct {
 	NoPredbCrack bool `long:"npc" description:"禁用预计算库查询， 改为现场计算"`
 	NoDynaCrack  bool `long:"ndc" description:"跳过动态哈希破解"`
-	NohashCache  bool `long:"nhc" description:"禁用计算缓存； 不影响成功结果缓存"`
 }
 type DirectoryOptions struct {
 	PredbDir    string `long:"predb-dir" value-name:"PATH" description:"预计算库、 内置字典的目录" default:"decipher_db"`
-	RunCacheDir string `long:"run-cache-dir" value-name:"PATH" description:"运行缓存、 临时字典的目录" default:"decipher_cache"`
+	RunCacheDir string `long:"run-cache-dir" value-name:"PATH" description:"临时字典的目录" default:"decipher_cache"`
 }
 
 type LogOptions struct {

@@ -40,7 +40,7 @@ func GetAllAlgorithms() []Algorithm {
 		&md5.MD5SubAlgo{},
 		&md5.MD5LikeShop2020Algo{},
 		&md5.MD5LikeShop2021Algo{},
-		&md5.MD5CustomMssAlgo{},
+		&md5.MD5CustomByPwdAlgo{},
 		&md5.MD5CustomNc65Algo{},
 		&md5.MD5CustomGmshopAlgo{},
 		&md5.MD5PassSaltAlgo2{},

@@ -3,13 +3,11 @@ package cracker
 import (
 	"context"
 	"decipher/internal/algo"
-
-	"github.com/winezer0/xutils/cacher"
 )
 
 // crackWorker is the main function for worker goroutines
 func (e *Engine) crackWorker(ctx context.Context, taskChan <-chan crackTask, resultChan chan<- CrackerResult,
-	hashSaltTargets []HashSaltTarget, targetStrategies map[string]crackStrategy, cacheManagers map[string]*cacher.CacheManager) {
+	hashSaltTargets []HashSaltTarget, targetStrategies map[string]crackStrategy) {
 
 	for task := range taskChan {
 		plainLine := task.plainLine
@@ -71,29 +69,7 @@ func (e *Engine) crackWorker(ctx context.Context, taskChan <-chan crackTask, res
 				continue
 			}
 
-			hashCM := cacheManagers[target.Hash]
-
 			for _, salt := range finalSecrets {
-				// 检查缓存: key = plaintext:salt
-				cacheKey := genCachedKey(plainLine, salt)
-				if cachedValue, exists := hashCM.GetString(cacheKey); exists {
-					if len(cachedValue) > 0 {
-						cacheAlgo, cachePlain, cacheSalt := ParseRecoverKey(cachedValue)
-						result := CrackerResult{
-							Hash:      target.Hash,
-							AlgoType:  "cached",
-							Algorithm: cacheAlgo,
-							Plaintext: cachePlain,
-							Salt:      cacheSalt,
-						}
-						resultChan <- result
-						goto NextTarget // 找到结果，跳过后续 Salt
-					}
-					continue
-				}
-
-				cacheValue := ""
-				found := false
 				for _, alg := range validAlgos {
 					// 这里的 validAlgos 已经在前面筛选过，无需再判断 NeedSalt
 					plain, err := alg.Recover(target.Hash, e.AffixSalt(salt), e.AffixPasswd(plainLine))
@@ -105,20 +81,13 @@ func (e *Engine) crackWorker(ctx context.Context, taskChan <-chan crackTask, res
 							Plaintext: plain,
 							Salt:      salt,
 						}
-						cacheValue = result.GetKeywords()
 						select {
 						case <-ctx.Done():
 							return
 						case resultChan <- result:
 						}
-						found = true
-						break
+						goto NextTarget
 					}
-				}
-				// 尝试完所有算法后， 记录缓存
-				hashCM.Set(cacheKey, cacheValue)
-				if found {
-					goto NextTarget
 				}
 			}
 		NextTarget:
