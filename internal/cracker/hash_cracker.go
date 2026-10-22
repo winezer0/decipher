@@ -101,10 +101,46 @@ type crackTask struct {
 	salts     []string // 同一盐批次可由多个任务共享，发布后禁止修改。
 }
 
-// crackStrategy defines the cracking strategy for a specific hash target
+// crackStrategy 保存原始目标和按用户顺序筛选的算法，发布后只读。
 type crackStrategy struct {
-	validAlgos   []algo.Algorithm
-	anyNeedsSalt bool
+	target     HashSaltTarget
+	validAlgos []algo.Algorithm
+	secret     string // 固定轮中已附加前后缀的盐。
+}
+
+type crackStrategies struct {
+	fixed   []crackStrategy
+	dynamic []crackStrategy
+}
+
+func (e *Engine) prepareCrackStrategies(targets []HashSaltTarget, algos []algo.Algorithm) crackStrategies {
+	var strategies crackStrategies
+	for _, target := range targets {
+		var fixed, dynamic []algo.Algorithm
+		for _, alg := range algos {
+			if !alg.Identify(target.Hash) {
+				continue
+			}
+			if target.Salt != "" || !alg.NeedSalt() {
+				fixed = append(fixed, alg)
+			} else {
+				dynamic = append(dynamic, alg)
+			}
+		}
+		if len(fixed) > 0 {
+			if strategies.fixed == nil {
+				strategies.fixed = make([]crackStrategy, 0, len(targets))
+			}
+			strategies.fixed = append(strategies.fixed, crackStrategy{target: target, validAlgos: fixed, secret: e.AffixSalt(target.Salt)})
+		}
+		if len(dynamic) > 0 {
+			if strategies.dynamic == nil {
+				strategies.dynamic = make([]crackStrategy, 0, len(targets))
+			}
+			strategies.dynamic = append(strategies.dynamic, crackStrategy{target: target, validAlgos: dynamic})
+		}
+	}
+	return strategies
 }
 
 func (e *Engine) runHashCrackWithDictStream(hashSaltTargets []HashSaltTarget, algos []algo.Algorithm, saltProviders []SaltProvider, reader io.Reader, startTime time.Time, bar *progressbar.ProgressBar) []CrackerResult {
@@ -122,46 +158,14 @@ func (e *Engine) runHashCrackWithDictStream(hashSaltTargets []HashSaltTarget, al
 
 	var wg sync.WaitGroup
 
-	targetStrategies := make(map[string]crackStrategy)
-	// 将 hashSaltTargets 转换为更易查找的结构，如果有自带 salt 的话
-	// 注意：这里 hashSaltTargets 中的 Salt 字段是目标自带的盐（如果有），而不是我们要枚举的盐
-	// 如果目标自带盐，那么它应该只使用自带的盐，或者将自带盐作为枚举盐之一？
-	// 这里的逻辑需要理清：
-	// HashSaltTarget 中的 Salt 是指 format 为 hash:salt 时提取出的 salt。
-	// 如果提供了这个 salt，通常意味着这个 hash 是用这个 salt 生成的。
-	// 但如果用户还提供了 secretFiles (salt 字典)，是尝试字典中的 salt 还是只用自带 salt？
-	// 原有逻辑是 ConvertToHashSaltsTarget 将目标自带 salt 和 字典 salt 组合。
-	// 但现在 salt 是流式的，我们需要调整策略。
-
-	// 策略调整：
-	// 1. 对于自带 salt 的 target，它的 "枚举 salt 列表" 应该包含自带 salt。
-	// 2. 对于不带 salt 的 target，完全依赖 saltProviders。
-	// 为了统一，我们在 Worker 内部处理这两种情况。
-
-	for _, t := range hashSaltTargets {
-		var valid []algo.Algorithm
-		anyNeedsSalt := false
-
-		for _, a := range algos {
-			if a.Identify(t.Hash) {
-				valid = append(valid, a)
-				if a.NeedSalt() {
-					anyNeedsSalt = true
-				}
-			}
-		}
-		targetStrategies[t.Hash] = crackStrategy{
-			validAlgos:   valid,
-			anyNeedsSalt: anyNeedsSalt,
-		}
-	}
+	strategies := e.prepareCrackStrategies(hashSaltTargets, algos)
 
 	// 启动 Workers
 	for i := 0; i < e.workers; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			e.crackWorker(ctx, taskChan, resultChan, hashSaltTargets, targetStrategies)
+			e.crackWorker(ctx, taskChan, resultChan, strategies)
 		}()
 	}
 
