@@ -3,9 +3,7 @@ package md5
 import (
 	"crypto/md5"
 	"decipher/internal/ident"
-	"decipher/internal/myutils"
 	"encoding/hex"
-	"io"
 
 	"decipher/internal/algo/types"
 )
@@ -30,9 +28,6 @@ func (a *MD5Algo) NeedAddToPredb() bool {
 // secret: 盐值（可选）
 // 返回: 哈希值, nil
 func (a *MD5Algo) Seal(plaintext, secret string) (string, error) {
-	if secret != "" {
-		return md5Hex(plaintext), nil
-	}
 	return md5Hex(plaintext), nil
 }
 
@@ -42,20 +37,27 @@ func (a *MD5Algo) Seal(plaintext, secret string) (string, error) {
 // candidatePlain: 待验证的明文
 // 返回: 如果匹配返回 candidatePlain, nil；否则返回 "", ErrVerificationFailed
 func (a *MD5Algo) Recover(token, secret, candidatePlain string) (string, error) {
-	computed, err := a.Seal(candidatePlain, secret)
-	if err != nil {
-		return "", err
-	}
-	if myutils.EqualString(computed, token, true) {
+	if md5Matches(token, md5.Sum([]byte(candidatePlain))) {
 		return candidatePlain, nil
 	}
 	return "", types.ErrVerificationFailed
 }
 
 func md5Hex(s string) string {
-	h := md5.New()
-	io.WriteString(h, s)
-	return hex.EncodeToString(h.Sum(nil))
+	sum := md5.Sum([]byte(s))
+	return hex.EncodeToString(sum[:])
+}
+
+// md5Matches 直接比较摘要，避免每次验证构造十六进制字符串及小写副本。
+func md5Matches(token string, sum [md5.Size]byte) bool {
+	if len(token) != hex.EncodedLen(md5.Size) {
+		return false
+	}
+	var expected [md5.Size]byte
+	if _, err := hex.Decode(expected[:], []byte(token)); err != nil {
+		return false
+	}
+	return expected == sum
 }
 
 func (a *MD5Algo) Identify(token string) bool {

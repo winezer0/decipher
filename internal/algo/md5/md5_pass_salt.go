@@ -1,9 +1,9 @@
 package md5
 
 import (
+	"crypto/md5"
 	"decipher/internal/algo/types"
 	"decipher/internal/ident"
-	"decipher/internal/myutils"
 )
 
 type MD5PassSaltAlgo struct{}
@@ -19,8 +19,7 @@ func (a *MD5PassSaltAlgo) Seal(plaintext, secret string) (string, error) {
 }
 
 func (a *MD5PassSaltAlgo) Recover(token, secret, candidatePlain string) (string, error) {
-	computed, _ := a.Seal(candidatePlain, secret)
-	if myutils.EqualString(computed, token, true) {
+	if md5Matches(token, md5.Sum([]byte(candidatePlain+secret))) {
 		return candidatePlain, nil
 	}
 	return "", types.ErrVerificationFailed
