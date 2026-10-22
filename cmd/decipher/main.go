@@ -2,71 +2,79 @@ package main
 
 import (
 	"decipher/internal/cracker"
+	"errors"
+	"fmt"
+	"os"
 
 	"github.com/winezer0/xutils/logging"
+	"github.com/winezer0/xutils/utils"
 )
 
 func main() {
+	os.Exit(run())
+}
+
+func run() int {
 	opts, _ := InitOptionsArgs(1)
 	defer logging.Sync()
-
-	// 解析操作类型
-	var modeTypes []cracker.ModeType
-	for _, m := range opts.Mode {
-		modeTypes = append(modeTypes, cracker.ResolveMode(m))
+	if err := runActions(opts); err != nil {
+		logging.Errorf("%v", err)
+		return 1
 	}
-	logging.Infof("current mode types: %v", modeTypes)
+	return 0
+}
 
-	hasMode := func(target cracker.ModeType) bool {
-		for _, m := range modeTypes {
-			if m == target {
-				return true
-			}
-		}
-		return false
+func runActions(opts *Options) error {
+	// 维护操作不初始化引擎，避免清理后重新创建内置字典。
+	if opts.ClearCache || opts.DedupPredb {
+		return runMaintenance(opts)
 	}
-
-	// 初始化引擎对象 注意 其中也初始化内置字典了
 	engine := cracker.NewEngineWithAffix(opts.Workers, opts.PredbDir, opts.RunCacheDir, opts.PassPrefix, opts.PassSuffix, opts.SaltPrefix, opts.SaltSuffix)
+	actions := []struct {
+		command string
+		name    string
+		run     func(*cracker.Engine, *Options) error
+	}{
+		{"dict add", "dict add", dictAddAction},
+		{"dict init", "dict init", dictInitAction},
+		{"id", "ident", identAction},
+		{"enc", "encrypt", encryptAction},
+		{"dec", "decrypt", decryptAction},
+	}
+	for _, action := range actions {
+		if opts.Command != action.command {
+			continue
+		}
+		logging.Infof("running command %s", action.command)
+		if err := action.run(engine, opts); err != nil {
+			return fmt.Errorf("%s failed: %w", action.name, err)
+		}
+		logging.Infof("%s completed", action.name)
+	}
+	return nil
+}
 
-	// 如果是添加模式 (ModeAdd)
-	if hasMode(cracker.ModeAdded) {
-		// 功能：将用户提供的字典 (-d) 和 盐 (-s) 追加到内置字典文件 (builtin-plain.txt, builtin-salt.txt) 中
-		logging.Info("running mode added: appending dictis to builtin files...")
-		if err := addedAction(engine, opts); err != nil {
-			logging.Errorf("added dicts to embeds dicts error: %s", err)
-		} else {
-			logging.Info("added dicts to embeds completed.")
+func runMaintenance(opts *Options) error {
+	if opts.ClearCache {
+		var paths []string
+		for _, path := range []string{opts.PredbDir, opts.RunCacheDir, opts.FailureCache} {
+			if _, err := os.Lstat(path); errors.Is(err, os.ErrNotExist) {
+				continue // 已不存在的缓存无需清理。
+			} else if err != nil {
+				return fmt.Errorf("inspect cache path %s: %w", path, err)
+			}
+			paths = append(paths, path)
+		}
+		logging.Infof("cleaning up cache and db dir: %v", paths)
+		if _, errs := utils.ClearPaths(paths, false, 0); len(errs) > 0 {
+			return fmt.Errorf("clear cache: %w", errors.Join(errs...))
+		}
+		logging.Info("cleanup cache and db success")
+	}
+	if opts.DedupPredb {
+		if err := cracker.DeduplicateCache(opts.PredbDir); err != nil {
+			return err
 		}
 	}
-
-	// 识别模式
-	if hasMode(cracker.ModeIdent) {
-		logging.Info("running mode ident: identify the input string hash algorithm...")
-		if err := identAction(engine, opts); err != nil {
-			logging.Errorf("ident hashes occur error: %s", err)
-		} else {
-			logging.Info("ident hashes completed.")
-		}
-	}
-
-	// 如果是加密模式 调用已选择算法进行加密输出
-	if hasMode(cracker.ModeEncrypt) {
-		logging.Info("running mode encrypt: encrypt the input string to hash...")
-		if err := encryptAction(engine, opts); err != nil {
-			logging.Errorf("encrypt string to hashes occur error: %s", err)
-		} else {
-			logging.Info("encrypt string to hashes completed.")
-		}
-	}
-
-	// 如果是解密模式 调用已选择算法进行密文解密
-	if hasMode(cracker.ModeDecrypt) {
-		logging.Info("running mode decrypt: decrypt the hashes to plain...")
-		if err := decryptAction(engine, opts); err != nil {
-			logging.Errorf("decrypt hashes occur error: %s", err)
-		} else {
-			logging.Info("decrypt hashes to plain completed.")
-		}
-	}
+	return nil
 }

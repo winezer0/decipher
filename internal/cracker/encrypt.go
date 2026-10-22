@@ -8,9 +8,29 @@ import (
 	"github.com/winezer0/xutils/logging"
 )
 
-// RunEncrypt 对文本和盐值进行加密，并返回加密结果列表
-// 输出格式: Algorithm:hash:salt:plaintext
+type EncryptResult struct {
+	Algorithm string `json:"algorithm"`
+	Hash      string `json:"hash"`
+	Salt      string `json:"salt"`
+	Plaintext string `json:"plaintext"`
+}
+
+func (r EncryptResult) String() string {
+	return strings.Join([]string{r.Algorithm, r.Hash, r.Salt, r.Plaintext}, ConcatSymbol)
+}
+
+// RunEncrypt 保留原有文本结果接口，供控制台及现有调用方使用。
 func (e *Engine) RunEncrypt(plainDicts []string, secretDicts []string, algos []algo.Algorithm) []string {
+	results := e.RunEncryptResults(plainDicts, secretDicts, algos)
+	lines := make([]string, 0, len(results))
+	for _, result := range results {
+		lines = append(lines, result.String())
+	}
+	return lines
+}
+
+// RunEncryptResults 保留各字段的原始边界，供 CSV/JSON 序列化使用。
+func (e *Engine) RunEncryptResults(plainDicts []string, secretDicts []string, algos []algo.Algorithm) []EncryptResult {
 	// 加载文件到列表
 	texts := ReadFilesToStrings(plainDicts, false)
 
@@ -34,7 +54,7 @@ func (e *Engine) RunEncrypt(plainDicts []string, secretDicts []string, algos []a
 	}
 
 	jobs := make(chan job, e.workers*2)
-	resultsChan := make(chan string, e.workers*10)
+	resultsChan := make(chan EncryptResult, e.workers*10)
 	var wg sync.WaitGroup
 
 	// Start workers
@@ -48,11 +68,7 @@ func (e *Engine) RunEncrypt(plainDicts []string, secretDicts []string, algos []a
 					// 加密失败，跳过此任务
 					continue
 				}
-				// 输出格式：Algorithm:hash:salt:plaintext
-				element := []string{j.alg.Name(), hash, j.salt, j.text}
-				// 使用 strings.Join 可能会有问题如果 salt 或 text 包含分隔符
-				// 这里简单处理
-				resultsChan <- strings.Join(element, ConcatSymbol)
+				resultsChan <- EncryptResult{Algorithm: j.alg.Name(), Hash: hash, Salt: j.salt, Plaintext: j.text}
 			}
 		}()
 	}
@@ -124,7 +140,7 @@ func (e *Engine) RunEncrypt(plainDicts []string, secretDicts []string, algos []a
 	}()
 
 	// Collector
-	var results []string
+	results := make([]EncryptResult, 0)
 	for res := range resultsChan {
 		results = append(results, res)
 	}

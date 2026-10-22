@@ -3,6 +3,7 @@ package cracker
 import (
 	"bufio"
 	"decipher/internal/algo"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -46,13 +47,11 @@ func (e *Engine) CreatePredb(plainDicts []string, secretDicts []string, selectAl
 	saltProvider = NewMultiSaltProvider(providers)
 
 	// 使用流式批处理进行并发预计算
-	e.genPredbConcurrency(preDBAlgos, plainDicts, saltProvider)
-
-	return nil
+	return e.genPredbConcurrency(preDBAlgos, plainDicts, saltProvider)
 }
 
 // genPredbConcurrency 并发生成缓存条目
-func (e *Engine) genPredbConcurrency(algos []algo.Algorithm, plainFiles []string, saltProvider SaltProvider) {
+func (e *Engine) genPredbConcurrency(algos []algo.Algorithm, plainFiles []string, saltProvider SaltProvider) error {
 	// 分离算法
 	var saltedAlgos []algo.Algorithm
 	var unsaltedAlgos []algo.Algorithm
@@ -67,12 +66,25 @@ func (e *Engine) genPredbConcurrency(algos []algo.Algorithm, plainFiles []string
 	resultsChan := make(chan predbRes, e.workers*10)
 
 	// 启动写入器
-	writerDone := make(chan struct{})
+	writerDone := make(chan error, 1)
 	go func() {
-		defer close(writerDone)
+		var writeErr error
 		files := make(map[string]*os.File)
 		writers := make(map[string]*bufio.Writer)
 		counts := make(map[string]int)
+		defer func() {
+			for name, w := range writers {
+				if err := w.Flush(); err != nil {
+					writeErr = errors.Join(writeErr, fmt.Errorf("flush pre-db %s: %w", name, err))
+				}
+			}
+			for name, f := range files {
+				if err := f.Close(); err != nil {
+					writeErr = errors.Join(writeErr, fmt.Errorf("close pre-db %s: %w", name, err))
+				}
+			}
+			writerDone <- writeErr
+		}()
 
 		// 预先打开文件
 		for _, alg := range algos {
@@ -83,7 +95,7 @@ func (e *Engine) genPredbConcurrency(algos []algo.Algorithm, plainFiles []string
 			dbPath := filepath.Join(e.PredbDir, fmt.Sprintf(PredbFileFormat, algoName))
 			dbObj, err := os.OpenFile(dbPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 			if err != nil {
-				logging.Errorf("Failed to open pre-db file for %s: %v", algoName, err)
+				writeErr = errors.Join(writeErr, fmt.Errorf("open pre-db %s: %w", dbPath, err))
 				continue
 			}
 			files[algoName] = dbObj
@@ -91,23 +103,17 @@ func (e *Engine) genPredbConcurrency(algos []algo.Algorithm, plainFiles []string
 			counts[algoName] = 0
 		}
 
-		defer func() {
-			for _, w := range writers {
-				w.Flush()
-			}
-			for _, f := range files {
-				f.Close()
-			}
-		}()
-
 		for res := range resultsChan {
+			if writeErr != nil {
+				continue // 继续消费通道，避免生产者因写入失败而阻塞。
+			}
 			w, ok := writers[res.algo]
 			if !ok {
 				// 理论上不应该走到这里，因为前面已经预打开了
 				fname := filepath.Join(e.PredbDir, fmt.Sprintf(PredbFileFormat, res.algo))
 				f, err := os.OpenFile(fname, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 				if err != nil {
-					logging.Errorf("Failed to open pre-db file for %s: %v", res.algo, err)
+					writeErr = fmt.Errorf("open pre-db %s: %w", fname, err)
 					continue
 				}
 				files[res.algo] = f
@@ -118,10 +124,15 @@ func (e *Engine) genPredbConcurrency(algos []algo.Algorithm, plainFiles []string
 
 			element := []string{HashStringFormat(res.hash), res.salt, res.plain}
 			entry := strings.Join(element, ConcatSymbol)
-			w.WriteString(entry + "\n")
+			if _, err := w.WriteString(entry + "\n"); err != nil {
+				writeErr = fmt.Errorf("write pre-db %s: %w", res.algo, err)
+				continue
+			}
 			counts[res.algo]++
 			if counts[res.algo]%4096 == 0 {
-				w.Flush()
+				if err := w.Flush(); err != nil {
+					writeErr = fmt.Errorf("flush pre-db %s: %w", res.algo, err)
+				}
 			}
 		}
 	}()
@@ -198,17 +209,13 @@ func (e *Engine) genPredbConcurrency(algos []algo.Algorithm, plainFiles []string
 	// 流式读取明文文件并分批处理
 	batchSize := 10000
 	var plainBatch []string
+	var readErr error
 
 	for _, path := range plainFiles {
-		if !utils.FileExists(path) {
-			logging.Warnf("file not found: %s", path)
-			continue
-		}
-
 		f, err := os.Open(path)
 		if err != nil {
-			logging.Errorf("failed to open file %s: %v", path, err)
-			continue
+			readErr = fmt.Errorf("open plain file %s: %w", path, err)
+			break
 		}
 
 		logging.Infof("GenPredb Processing plain file: %s", path)
@@ -223,18 +230,29 @@ func (e *Engine) genPredbConcurrency(algos []algo.Algorithm, plainFiles []string
 				}
 			}
 		}
-		f.Close()
+		if err := scanner.Err(); err != nil {
+			readErr = fmt.Errorf("read plain file %s: %w", path, err)
+		}
+		if err := f.Close(); err != nil {
+			readErr = errors.Join(readErr, err)
+		}
+		if readErr != nil {
+			break
+		}
 	}
 
 	// 处理剩余的批次
-	if len(plainBatch) > 0 {
+	if readErr == nil && len(plainBatch) > 0 {
 		processBatch(plainBatch)
 	}
 
 	close(resultsChan)
-	<-writerDone
+	if err := errors.Join(readErr, <-writerDone); err != nil {
+		return err
+	}
 
 	logging.Infof("Predb generation done in %v", time.Since(startTime))
+	return nil
 }
 
 // CreatePredbWithCheck 检查并初始化预计算hash缓存

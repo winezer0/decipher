@@ -55,6 +55,24 @@ func TestCreatePredb(t *testing.T) {
 	}
 }
 
+func TestCreatePredbReturnsInputErrors(t *testing.T) {
+	for _, input := range []string{"missing", "oversized line"} {
+		t.Run(input, func(t *testing.T) {
+			dir := t.TempDir()
+			plainFile := filepath.Join(dir, "plain.txt")
+			if input == "oversized line" {
+				if err := os.WriteFile(plainFile, []byte(strings.Repeat("x", 128*1024)), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			engine := &Engine{workers: 1, PredbDir: dir}
+			if err := engine.CreatePredb([]string{plainFile}, nil, []algo.Algorithm{&md5.MD5Algo{}}); err == nil {
+				t.Fatal("expected input error, got success")
+			}
+		})
+	}
+}
+
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil

@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/winezer0/xutils/logging"
-	"github.com/winezer0/xutils/utils"
 )
 
 // decryptAction
@@ -18,9 +17,14 @@ import (
 // 2. 使用预计算缓存（predb）进行破解
 // 3. 使用静态/动态哈希进行字典破解
 // 4. 使用加密解密器进行密文解密
-func decryptAction(engine *cracker.Engine, opts *Options) error {
+func decryptAction(engine *cracker.Engine, opts *Options) (err error) {
+	temps := tempFiles{remove: opts.RemoveTemp}
+	defer temps.cleanup(&err)
 	// 将用户输入的目标转为文件
-	hashesFiles, hashesTemp := resolveDictsPrefix(opts.Hashes, engine.RunCacheDir, "dec_hashes")
+	hashesFiles, hashesTemp, err := temps.resolve(opts.Hashes, engine.RunCacheDir, "dec_hashes")
+	if err != nil {
+		return err
+	}
 	logging.Infof("choices hashes %s to files: %s, temp: %s", opts.Hashes, hashesFiles, hashesTemp)
 	if len(hashesFiles) == 0 {
 		return fmt.Errorf("not valid hashes target was parsed :%s", opts.Hashes)
@@ -32,7 +36,10 @@ func decryptAction(engine *cracker.Engine, opts *Options) error {
 	}
 
 	// 将用户输入的明文字典文件格式进行转换 最终实现只输入文件格式
-	plainFiles, plainTemp := resolveDictsPrefix(opts.UsedPlains, engine.RunCacheDir, "dec_plain")
+	plainFiles, plainTemp, err := temps.resolve(opts.UsedPlains, engine.RunCacheDir, "dec_plain")
+	if err != nil {
+		return err
+	}
 	logging.Infof("choices plain files: %s, temp: %s", plainFiles, plainTemp)
 	// 当用户没有指定任何有效明文字典时 使用默认字典
 	if len(plainFiles) == 0 {
@@ -41,7 +48,10 @@ func decryptAction(engine *cracker.Engine, opts *Options) error {
 	}
 
 	// 将用户输入的salt字典文件格式进行转换 最终实现只输入文件格式
-	secretDicts, secretTemp := resolveDictsPrefix(opts.UsedSecrets, engine.RunCacheDir, "dec_secret")
+	secretDicts, secretTemp, err := temps.resolve(opts.UsedSecrets, engine.RunCacheDir, "dec_secret")
+	if err != nil {
+		return err
+	}
 	logging.Infof("choices secret files: %s, temp: %s", secretDicts, secretTemp)
 	// 当用户没有指定有效密钥字典时，将密钥字典设置设置为空
 	if len(secretDicts) == 0 {
@@ -96,7 +106,9 @@ func decryptAction(engine *cracker.Engine, opts *Options) error {
 				delete(failedTargetsMap, res.Hash)
 				allResults = append(allResults, res)
 			}
-			export.ExportCSV(engine.GetSuccessCachePath(), predbResults, false)
+			if err := export.ExportCSV(engine.GetSuccessCachePath(), predbResults, false); err != nil {
+				return fmt.Errorf("write success cache: %w", err)
+			}
 			logging.Infof("Predb crack found: %d/%d", len(predbResults), len(targets))
 		} else {
 			// 对支持缓存的静态hash算法也使用动态破解
@@ -109,7 +121,9 @@ func decryptAction(engine *cracker.Engine, opts *Options) error {
 					delete(failedTargetsMap, res.Hash)
 					allResults = append(allResults, res)
 				}
-				export.ExportCSV(engine.GetSuccessCachePath(), results, false)
+				if err := export.ExportCSV(engine.GetSuccessCachePath(), results, false); err != nil {
+					return fmt.Errorf("write success cache: %w", err)
+				}
 				logging.Infof("predb algos crack found: %d/%d", len(results), len(residue))
 			}
 		}
@@ -128,7 +142,9 @@ func decryptAction(engine *cracker.Engine, opts *Options) error {
 				delete(failedTargetsMap, res.Hash)
 				allResults = append(allResults, res)
 			}
-			export.ExportCSV(engine.GetSuccessCachePath(), results, false)
+			if err := export.ExportCSV(engine.GetSuccessCachePath(), results, false); err != nil {
+				return fmt.Errorf("write success cache: %w", err)
+			}
 			logging.Infof("Static crack found: %d/%d", len(results), len(residue))
 		}
 
@@ -142,7 +158,9 @@ func decryptAction(engine *cracker.Engine, opts *Options) error {
 				delete(failedTargetsMap, res.Hash)
 				allResults = append(allResults, res)
 			}
-			export.ExportCSV(engine.GetSuccessCachePath(), results, false)
+			if err := export.ExportCSV(engine.GetSuccessCachePath(), results, false); err != nil {
+				return fmt.Errorf("write success cache: %w", err)
+			}
 			logging.Infof("Dynamic crack found: %d/%d", len(results), len(residue))
 		}
 	}
@@ -157,20 +175,23 @@ func decryptAction(engine *cracker.Engine, opts *Options) error {
 			delete(failedTargetsMap, res.Hash)
 			allResults = append(allResults, res)
 		}
-		export.ExportCSV(engine.GetSuccessCachePath(), decResults, false)
+		if err := export.ExportCSV(engine.GetSuccessCachePath(), decResults, false); err != nil {
+			return fmt.Errorf("write success cache: %w", err)
+		}
 		logging.Infof("Decrypt crack found: %d/%d", len(decResults), len(residue))
 	}
 
 	outputFile := filepath.Join(opts.Output, fmt.Sprintf("%s.dec.%s", AppName, opts.OutputType))
 	if strings.ToLower(opts.OutputType) == "json" {
-		if err := export.ExportJSON(outputFile, allResults); err == nil {
-			logging.Infof("Crack results exported to %s", outputFile)
+		if err := export.ExportJSON(outputFile, allResults); err != nil {
+			return fmt.Errorf("export results to %s: %w", outputFile, err)
 		}
 	} else {
-		if err := export.ExportCSV(outputFile, allResults, true); err == nil {
-			logging.Infof("Crack results exported to %s", outputFile)
+		if err := export.ExportCSV(outputFile, allResults, true); err != nil {
+			return fmt.Errorf("export results to %s: %w", outputFile, err)
 		}
 	}
+	logging.Infof("Crack results exported to %s", outputFile)
 
 	// 统计和记录失败的 Hash
 	failedTargets := failedTargetsMap
@@ -180,17 +201,11 @@ func decryptAction(engine *cracker.Engine, opts *Options) error {
 	if len(failedTargets) > 0 {
 		failureFile := filepath.Join(opts.Output, opts.FailureCache)
 		if err := export.ExportFailureCSV(failureFile, failedTargets, true); err != nil {
-			logging.Errorf("Failed to write failure cache: %v", err)
+			return fmt.Errorf("write failure records: %w", err)
 		} else {
 			logging.Infof("Failure records written to %s", failureFile)
 		}
 	}
 
-	// 清理缓存文件
-	if opts.RemoveTemp {
-		utils.ClearFiles(hashesTemp...)
-		utils.ClearFiles(plainTemp...)
-		utils.ClearFiles(secretTemp...)
-	}
 	return nil
 }

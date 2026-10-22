@@ -5,13 +5,18 @@ import (
 	"decipher/internal/export"
 	"fmt"
 	"github.com/winezer0/xutils/logging"
-	"github.com/winezer0/xutils/utils"
+	"path/filepath"
 	"strings"
 )
 
-func identAction(engine *cracker.Engine, opts *Options) error {
+func identAction(engine *cracker.Engine, opts *Options) (err error) {
+	temps := tempFiles{remove: opts.RemoveTemp}
+	defer temps.cleanup(&err)
 	// 将用户输入的目标转为文件
-	hashesFiles, hashesTemp := resolveDictsPrefix(opts.Hashes, engine.RunCacheDir, "ident_secret")
+	hashesFiles, _, err := temps.resolve(opts.Hashes, engine.RunCacheDir, "ident_secret")
+	if err != nil {
+		return err
+	}
 	if len(hashesFiles) == 0 {
 		return fmt.Errorf("not valid hashes target was parsed :%s", opts.Hashes)
 	}
@@ -21,14 +26,10 @@ func identAction(engine *cracker.Engine, opts *Options) error {
 		fmt.Printf("%s -> [%s]\n", r.Hash, strings.Join(r.AlgosNames, ","))
 	}
 
-	// 清理缓存文件
-	if opts.RemoveTemp {
-		utils.ClearFiles(hashesTemp...)
-	}
-
+	outputFile := filepath.Join(opts.Output, fmt.Sprintf("%s.id.%s", AppName, opts.OutputType))
 	if strings.ToLower(opts.OutputType) == "json" {
-		if err := export.ExportJSON(opts.Output, identResult); err == nil {
-			logging.Infof("Ident results exported to %s", opts.Output)
+		if err := export.ExportJSON(outputFile, identResult); err == nil {
+			logging.Infof("Ident results exported to %s", outputFile)
 			return nil
 		} else {
 			return err
@@ -36,8 +37,8 @@ func identAction(engine *cracker.Engine, opts *Options) error {
 	}
 
 	if strings.ToLower(opts.OutputType) == "csv" {
-		if err := export.ExportIdentCSV(opts.Output, identResult, true); err == nil {
-			logging.Infof("Ident results exported to %s", opts.Output)
+		if err := export.ExportIdentCSV(outputFile, identResult, true); err == nil {
+			logging.Infof("Ident results exported to %s", outputFile)
 			return nil
 		} else {
 			return err

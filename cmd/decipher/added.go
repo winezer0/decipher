@@ -3,31 +3,34 @@ package main
 import (
 	"decipher/internal/algo"
 	"decipher/internal/cracker"
+	"errors"
 	"fmt"
 	"github.com/winezer0/xutils/logging"
-	"github.com/winezer0/xutils/utils"
 	"io"
 	"os"
 )
 
-func addedAction(engine *cracker.Engine, opts *Options) error {
+func dictAddAction(engine *cracker.Engine, opts *Options) (err error) {
+	temps := tempFiles{remove: opts.RemoveTemp}
+	defer temps.cleanup(&err)
 	// 将用户输入的字典文件格式进行转换 最终实现只输入文件格式
-	plainFiles, plainTemp := resolveDictsPrefix(opts.UsedPlains, engine.RunCacheDir, "add_plain")
-	logging.Infof("choices plain files: %s, temp: %s", plainFiles, plainTemp)
-	// 当用户没有指定任何有效明文字典时 使用默认字典
-	if len(plainFiles) == 0 {
-		plainFiles = []string{engine.GetBuiltinPlainPath()}
-		logging.Infof("use builtin plain dicts: %v", plainFiles)
+	plainFiles, plainTemp, err := temps.resolve(opts.UsedPlains, engine.RunCacheDir, "add_plain")
+	if err != nil {
+		return err
 	}
+	logging.Infof("choices plain files: %s, temp: %s", plainFiles, plainTemp)
 
 	// 当用户没有指定有效密钥字典时，将密钥字典设置设置为空
-	secretFiles, secretTemp := resolveDictsPrefix(opts.UsedSecrets, engine.RunCacheDir, "add_secret")
+	secretFiles, _, err := temps.resolve(opts.UsedSecrets, engine.RunCacheDir, "add_secret")
+	if err != nil {
+		return err
+	}
 	if len(secretFiles) == 0 {
 		secretFiles = []string{}
 		logging.Infof("use empty secret dicts: %v", secretFiles)
 	}
 
-	// 对于add模式 当用户没有添加字典时，使用内置字典和内置salt
+	// 仅追加用户提供的字典，不触发预计算。
 	builtinPlain := engine.GetBuiltinPlainPath()
 	builtinSalt := engine.GetBuiltinSaltPath()
 
@@ -47,29 +50,43 @@ func addedAction(engine *cracker.Engine, opts *Options) error {
 		}
 	}
 
-	// 3. 基于用户输入的字典生成或更新 predb
-	// 过滤静态算法和需要进行predb生成的算法
-	findAlgos := algo.GetAlgorithmsByKeys(opts.AlgoKeys, opts.AlgosPrecise)
-	predbAlogs := algo.FilterNeedAddToPredbAlogs(findAlgos)
-	if err := engine.CreatePredb(plainFiles, secretFiles, predbAlogs); err != nil {
-		logging.Errorf("Failed to create/update predb: %v", err)
-		return err
-	}
-
-	// 清理临时文件
-	if opts.RemoveTemp {
-		utils.ClearFiles(plainTemp...)
-		utils.ClearFiles(secretTemp...)
-	}
 	return nil
 }
 
-func appendToBuiltin(targetPath string, sourceFiles []string) error {
-	f, err := os.OpenFile(targetPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func dictInitAction(engine *cracker.Engine, opts *Options) (err error) {
+	temps := tempFiles{remove: opts.RemoveTemp}
+	defer temps.cleanup(&err)
+	algorithms := algo.FilterNeedAddToPredbAlogs(algo.GetAlgorithmsByKeys(opts.AlgoKeys, opts.AlgosPrecise))
+	if len(algorithms) == 0 {
+		return fmt.Errorf("no algorithms selected for pre-computation")
+	}
+	plains, _, err := temps.resolve(opts.UsedPlains, engine.RunCacheDir, "init_plain")
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	salts, _, err := temps.resolve(opts.UsedSecrets, engine.RunCacheDir, "init_secret")
+	if err != nil {
+		return err
+	}
+	if len(plains) == 0 {
+		plains = []string{engine.GetBuiltinPlainPath()}
+	}
+	if len(salts) == 0 {
+		salts = []string{engine.GetBuiltinSaltPath()}
+	}
+	return engine.CreatePredb(plains, salts, algorithms)
+}
+
+func appendToBuiltin(targetPath string, sourceFiles []string) (err error) {
+	f, err := os.OpenFile(targetPath, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
+	if err != nil {
+		return err
+	}
+	defer func() { err = errors.Join(err, f.Close()) }()
+	targetInfo, err := f.Stat()
+	if err != nil {
+		return err
+	}
 
 	for _, srcPath := range sourceFiles {
 		// 避免自我追加
@@ -80,8 +97,33 @@ func appendToBuiltin(targetPath string, sourceFiles []string) error {
 
 		src, err := os.Open(srcPath)
 		if err != nil {
-			logging.Warnf("Skipping %s: %v", srcPath, err)
+			return fmt.Errorf("open dictionary %s: %w", srcPath, err)
+		}
+		sourceInfo, err := src.Stat()
+		if err != nil {
+			return errors.Join(err, src.Close())
+		}
+		if os.SameFile(targetInfo, sourceInfo) {
+			if err := src.Close(); err != nil {
+				return err
+			}
 			continue
+		}
+		// Keep the existing final entry separate when the dictionary lacks a newline.
+		info, err := f.Stat()
+		if err != nil {
+			return errors.Join(err, src.Close())
+		}
+		if info.Size() > 0 {
+			var last [1]byte
+			if _, err := f.ReadAt(last[:], info.Size()-1); err != nil {
+				return errors.Join(err, src.Close())
+			}
+			if last[0] != '\n' {
+				if _, err := f.WriteString("\n"); err != nil {
+					return errors.Join(err, src.Close())
+				}
+			}
 		}
 
 		// 追加内容
@@ -90,8 +132,12 @@ func appendToBuiltin(targetPath string, sourceFiles []string) error {
 			return fmt.Errorf("failed copy from %s: %w", srcPath, err)
 		}
 		// 确保换行
-		f.WriteString("\n")
-		src.Close()
+		if err := src.Close(); err != nil {
+			return err
+		}
+		if _, err := f.WriteString("\n"); err != nil {
+			return err
+		}
 	}
 	return nil
 }
