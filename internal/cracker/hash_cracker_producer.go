@@ -113,38 +113,35 @@ func (e *Engine) processBatch(ctx context.Context, taskChan chan<- crackTask, pl
 
 		// 遍历 Salt 流
 		for salt := range saltStream {
+			if saltBatch == nil {
+				saltBatch = make([]string, 0, saltBatchSize)
+			}
 			saltBatch = append(saltBatch, salt)
 
 			// 当积攒了一批 Salt 后，与当前批次的明文进行组合
 			if len(saltBatch) >= saltBatchSize {
 				for _, p := range plains {
-					// 必须拷贝 saltBatch，因为底层数组会被复用
-					saltsCopy := make([]string, len(saltBatch))
-					copy(saltsCopy, saltBatch)
-
 					select {
 					case <-ctx.Done():
 						return
-					case taskChan <- crackTask{plainLine: p, salts: saltsCopy}:
+					case taskChan <- crackTask{plainLine: p, salts: saltBatch}:
 						if bar != nil {
 							bar.Add(len(p) + 1)
 						}
 					}
 				}
-				// 清空 Salt 批次
-				saltBatch = saltBatch[:0]
+				// 已发布的批次由 Workers 共享只读；下一批使用新数组。
+				saltBatch = nil
 			}
 		}
 
 		// 处理剩余的 Salt
 		if len(saltBatch) > 0 {
 			for _, p := range plains {
-				saltsCopy := make([]string, len(saltBatch))
-				copy(saltsCopy, saltBatch)
 				select {
 				case <-ctx.Done():
 					return
-				case taskChan <- crackTask{plainLine: p, salts: saltsCopy}:
+				case taskChan <- crackTask{plainLine: p, salts: saltBatch[:len(saltBatch):len(saltBatch)]}:
 					if bar != nil {
 						bar.Add(len(p) + 1)
 					}

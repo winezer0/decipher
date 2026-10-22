@@ -98,7 +98,7 @@ func (e *Engine) RunHashCrack(targets []HashSaltTarget, plainFiles []string, sec
 // 任务单元：明文块 + Salt 块
 type crackTask struct {
 	plainLine string
-	salts     []string
+	salts     []string // 同一盐批次可由多个任务共享，发布后禁止修改。
 }
 
 // crackStrategy defines the cracking strategy for a specific hash target
