@@ -53,9 +53,12 @@ func (e *Engine) RunHashCrack(targets []HashSaltTarget, plainFiles []string, sec
 
 		// Calculate total size for progress bar
 		var bar *progressbar.ProgressBar
+		var crackReader io.Reader = reader
 		size, err := reader.Seek(0, io.SeekEnd)
 		if err == nil {
-			reader.Seek(0, io.SeekStart)
+			if _, seekErr := reader.Seek(0, io.SeekStart); seekErr == nil {
+				crackReader = plaintextSizedReader{Reader: reader, size: size}
+			}
 
 			// 计算总任务量 = 文件大小 * (Salt遍历次数 + 1)
 			// +1 是因为我们增加了一个 "Fixed Pass" (处理自带Salt或无Salt算法)
@@ -75,7 +78,7 @@ func (e *Engine) RunHashCrack(targets []HashSaltTarget, plainFiles []string, sec
 		}
 
 		// 使用新的流式 Salt 处理方法
-		crackerResults := e.runHashCrackWithDictStream(targets, hashAlgos, saltProviders, reader, startTime, bar)
+		crackerResults := e.runHashCrackWithDictStream(targets, hashAlgos, saltProviders, crackReader, startTime, bar)
 		for _, res := range crackerResults {
 			allResults = append(allResults, res)
 

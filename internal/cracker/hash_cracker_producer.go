@@ -2,6 +2,7 @@ package cracker
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"io"
 	"strings"
@@ -10,6 +11,36 @@ import (
 	"github.com/schollz/progressbar/v3"
 	"github.com/winezer0/xutils/logging"
 )
+
+// Size obtained by RunHashCrack's existing progress calculation; never read or
+// seek a stream merely to choose its initial buffer.
+type plaintextSizedReader struct {
+	io.Reader
+	size int64
+}
+
+// Only concrete readers with cheap, non-consuming size information get a smaller
+// starting buffer. Unknown streams and larger inputs retain the existing size.
+func plaintextScannerBufferSize(reader io.Reader) int {
+	const smallBufferSize = 4096
+	var size int64
+	switch r := reader.(type) {
+	case *strings.Reader:
+		size = int64(r.Len())
+	case *bytes.Reader:
+		size = int64(r.Len())
+	case *bytes.Buffer:
+		size = int64(r.Len())
+	case plaintextSizedReader:
+		size = r.size
+	default:
+		return DefaultScannerBufferSize
+	}
+	if size >= 0 && size < smallBufferSize {
+		return smallBufferSize
+	}
+	return DefaultScannerBufferSize
+}
 
 // crackProducer reads plaintexts from the reader and dispatches tasks to workers.
 // It handles the combination of plaintexts and salts (Fixed Pass & Dynamic Pass).
@@ -20,7 +51,7 @@ func (e *Engine) crackProducer(ctx context.Context, taskChan chan<- crackTask, r
 	}
 
 	scanner := bufio.NewScanner(reader)
-	buf := make([]byte, 0, DefaultScannerBufferSize)
+	buf := make([]byte, 0, plaintextScannerBufferSize(reader))
 	scanner.Buffer(buf, MaxScannerTokenSize)
 
 	// Batch processing strategy:
