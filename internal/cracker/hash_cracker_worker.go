@@ -59,7 +59,13 @@ func (e *Engine) crackWorker(ctx context.Context, taskChan <-chan crackTask, res
 						return
 					default:
 					}
-					recovered, err := alg.Recover(target.Hash, secret, plain)
+					var recovered string
+					var err error
+					if alg.recoverPrepared != nil {
+						recovered, err = alg.recoverPrepared(strategy.prepared, secret, plain)
+					} else {
+						recovered, err = alg.Recover(target.Hash, secret, plain)
+					}
 					if err != nil {
 						continue
 					}

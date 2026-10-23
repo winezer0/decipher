@@ -104,8 +104,15 @@ type crackTask struct {
 // crackStrategy 保存原始目标和按用户顺序筛选的算法，发布后只读。
 type crackStrategy struct {
 	target     HashSaltTarget
-	validAlgos []algo.Algorithm
+	validAlgos []*crackAlgorithm
 	secret     string // 固定轮中已附加前后缀的盐。
+	prepared   *algo.PreparedDigest
+}
+
+type crackAlgorithm struct {
+	algo.Algorithm
+	recoverPrepared algo.PreparedRecover
+	tokenLength     int
 }
 
 type crackStrategies struct {
@@ -115,29 +122,59 @@ type crackStrategies struct {
 
 func (e *Engine) prepareCrackStrategies(targets []HashSaltTarget, algos []algo.Algorithm) crackStrategies {
 	var strategies crackStrategies
-	for _, target := range targets {
-		var fixed, dynamic []algo.Algorithm
-		for _, alg := range algos {
-			if !alg.Identify(target.Hash) {
+	bindings := make([]crackAlgorithm, len(algos))
+	for i, alg := range algos {
+		recover, tokenLength := algo.PrepareRecover(alg)
+		bindings[i] = crackAlgorithm{Algorithm: alg, recoverPrepared: recover, tokenLength: tokenLength}
+	}
+	var preparedTargets []algo.PreparedDigest
+	for index, target := range targets {
+		var fixed, dynamic []*crackAlgorithm
+		needsPrepared := false
+		var decoded algo.PreparedDigest
+		decodedAttempted := false
+		for i := range bindings {
+			alg := &bindings[i]
+			if alg.recoverPrepared != nil {
+				if len(target.Hash) != alg.tokenLength {
+					continue
+				}
+				if !decodedAttempted {
+					decoded = algo.DecodeDigest(target.Hash)
+					decodedAttempted = true
+				}
+				if !decoded.Valid() {
+					continue
+				}
+			} else if !alg.Identify(target.Hash) {
 				continue
 			}
+			needsPrepared = needsPrepared || alg.recoverPrepared != nil
 			if target.Salt != "" || !alg.NeedSalt() {
 				fixed = append(fixed, alg)
 			} else {
 				dynamic = append(dynamic, alg)
 			}
 		}
+		var prepared *algo.PreparedDigest
+		if needsPrepared {
+			if preparedTargets == nil {
+				preparedTargets = make([]algo.PreparedDigest, len(targets))
+			}
+			preparedTargets[index] = decoded
+			prepared = &preparedTargets[index]
+		}
 		if len(fixed) > 0 {
 			if strategies.fixed == nil {
 				strategies.fixed = make([]crackStrategy, 0, len(targets))
 			}
-			strategies.fixed = append(strategies.fixed, crackStrategy{target: target, validAlgos: fixed, secret: e.AffixSalt(target.Salt)})
+			strategies.fixed = append(strategies.fixed, crackStrategy{target: target, validAlgos: fixed, secret: e.AffixSalt(target.Salt), prepared: prepared})
 		}
 		if len(dynamic) > 0 {
 			if strategies.dynamic == nil {
 				strategies.dynamic = make([]crackStrategy, 0, len(targets))
 			}
-			strategies.dynamic = append(strategies.dynamic, crackStrategy{target: target, validAlgos: dynamic})
+			strategies.dynamic = append(strategies.dynamic, crackStrategy{target: target, validAlgos: dynamic, prepared: prepared})
 		}
 	}
 	return strategies

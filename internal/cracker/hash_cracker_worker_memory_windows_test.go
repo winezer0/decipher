@@ -20,7 +20,11 @@ func TestCrackWorkerMemoryProcess(t *testing.T) {
 	if name == "" {
 		return
 	}
-	for _, w := range append(workerWorkloads[:len(workerWorkloads):len(workerWorkloads)], shaWorkerWorkloads...) {
+	allWorkloads := make([]workerWorkload, 0, len(workerWorkloads)+len(shaWorkerWorkloads)+len(preparedWorkloads))
+	allWorkloads = append(allWorkloads, workerWorkloads...)
+	allWorkloads = append(allWorkloads, shaWorkerWorkloads...)
+	allWorkloads = append(allWorkloads, preparedWorkloads...)
+	for _, w := range allWorkloads {
 		if w.name != name {
 			continue
 		}
