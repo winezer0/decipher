@@ -123,6 +123,10 @@ func (e *Engine) processBatch(ctx context.Context, taskChan chan<- crackTask, pl
 	}
 	shareAffixes := dispatch.shareSaltAffixes && !dispatch.skipDynamic
 	done := ctx.Done()
+	progress := crackProgress{bar: bar}
+	if bar != nil {
+		defer progress.flush()
+	}
 
 	// Phase 1: Fixed Pass
 	// 处理无 Salt 需求或自带 Salt 的情况
@@ -133,7 +137,7 @@ func (e *Engine) processBatch(ctx context.Context, taskChan chan<- crackTask, pl
 		// 更新进度条
 		if bar != nil {
 			// +1 代表换行符或分隔符，保持字节计数一致性
-			bar.Add(len(p) + 1)
+			progress.add(len(p) + 1)
 		}
 	}
 
@@ -162,7 +166,7 @@ func (e *Engine) processBatch(ctx context.Context, taskChan chan<- crackTask, pl
 						return
 					}
 					if bar != nil {
-						bar.Add(len(p) + 1)
+						progress.add(len(p) + 1)
 					}
 				}
 				// 已发布的批次由 Workers 共享只读；下一批使用新数组。
@@ -178,7 +182,7 @@ func (e *Engine) processBatch(ctx context.Context, taskChan chan<- crackTask, pl
 					return
 				}
 				if bar != nil {
-					bar.Add(len(p) + 1)
+					progress.add(len(p) + 1)
 				}
 			}
 		}
@@ -200,6 +204,30 @@ func dispatchCrackTask(done <-chan struct{}, out chan<- crackTask, task crackTas
 	case out <- task:
 		return true
 	}
+}
+
+// Coalesce fast dispatch updates without delaying the first update. Slow
+// dispatches still flush on arrival; every return path flushes pending bytes.
+type crackProgress struct {
+	bar     *progressbar.ProgressBar
+	pending int64
+	last    time.Time
+}
+
+func (p *crackProgress) add(amount int) {
+	p.pending += int64(amount)
+	if p.pending >= 32*1024 || time.Since(p.last) >= 100*time.Millisecond {
+		p.flush()
+	}
+}
+
+func (p *crackProgress) flush() {
+	if p.pending == 0 {
+		return
+	}
+	p.bar.Add64(p.pending)
+	p.pending = 0
+	p.last = time.Now()
 }
 
 func (e *Engine) prepareSaltAffixes(salts []string, plains int, enabled bool) *preparedSaltBatch {

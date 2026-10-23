@@ -30,23 +30,8 @@ func (e *Engine) crackWorker(ctx context.Context, taskChan <-chan crackTask, res
 		}
 		plain := e.AffixPasswd(task.plainLine)
 		if fixedPass && strategies.fixedPlainDigest != nil {
-			candidate := strategies.fixedPlainDigest(plain)
-			for _, strategy := range selected {
-				select {
-				case <-done:
-					return
-				default:
-				}
-				if *strategy.prepared != candidate {
-					continue
-				}
-				alg := strategy.validAlgos[0]
-				result := CrackerResult{Hash: strategy.target.Hash, Salt: strategy.target.Salt, Plaintext: plain, Algorithm: alg.Name(), AlgoType: string(alg.GetAlgoType())}
-				select {
-				case <-done:
-					return
-				case resultChan <- result:
-				}
+			if !crackGroupedPlain(done, resultChan, strategies, plain) {
+				return
 			}
 			continue
 		}
@@ -105,4 +90,27 @@ func (e *Engine) crackWorker(ctx context.Context, taskChan <-chan crackTask, res
 		}
 		clear(affixedSalts)
 	}
+}
+
+// Keep grouped digest storage out of the ordinary per-target worker frame.
+func crackGroupedPlain(done <-chan struct{}, results chan<- CrackerResult, strategies crackStrategies, plain string) bool {
+	candidate := strategies.fixedPlainDigest(plain)
+	for _, strategy := range strategies.fixed {
+		select {
+		case <-done:
+			return false
+		default:
+		}
+		if *strategy.prepared != candidate {
+			continue
+		}
+		a := strategy.validAlgos[0]
+		result := CrackerResult{Hash: strategy.target.Hash, Salt: strategy.target.Salt, Plaintext: plain, Algorithm: a.Name(), AlgoType: string(a.GetAlgoType())}
+		select {
+		case <-done:
+			return false
+		case results <- result:
+		}
+	}
+	return true
 }
