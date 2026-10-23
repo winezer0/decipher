@@ -77,14 +77,34 @@ func recoverPreparedMD5(target *PreparedDigest, secret, plain string) (string, e
 }
 
 func recoverPreparedMD5SaltPass(target *PreparedDigest, secret, plain string) (string, error) {
-	if target.size == md5.Size && md5.Sum([]byte(secret+plain)) == [md5.Size]byte(target.sum[:md5.Size]) {
+	if target.size != md5.Size {
+		return "", types.ErrVerificationFailed
+	}
+	var sum [md5.Size]byte
+	if preparedStackInput(secret, plain) {
+		var buf [preparedInputBufferSize]byte
+		sum = md5.Sum(joinPreparedInput(buf[:], secret, plain))
+	} else {
+		sum = md5.Sum([]byte(secret + plain))
+	}
+	if sum == [md5.Size]byte(target.sum[:md5.Size]) {
 		return plain, nil
 	}
 	return "", types.ErrVerificationFailed
 }
 
 func recoverPreparedMD5PassSalt(target *PreparedDigest, secret, plain string) (string, error) {
-	if target.size == md5.Size && md5.Sum([]byte(plain+secret)) == [md5.Size]byte(target.sum[:md5.Size]) {
+	if target.size != md5.Size {
+		return "", types.ErrVerificationFailed
+	}
+	var sum [md5.Size]byte
+	if preparedStackInput(plain, secret) {
+		var buf [preparedInputBufferSize]byte
+		sum = md5.Sum(joinPreparedInput(buf[:], plain, secret))
+	} else {
+		sum = md5.Sum([]byte(plain + secret))
+	}
+	if sum == [md5.Size]byte(target.sum[:md5.Size]) {
 		return plain, nil
 	}
 	return "", types.ErrVerificationFailed
@@ -98,28 +118,68 @@ func recoverPreparedSHA1(target *PreparedDigest, secret, plain string) (string, 
 }
 
 func recoverPreparedSHA1SaltPass(target *PreparedDigest, secret, plain string) (string, error) {
-	if target.size == sha1.Size && sha1.Sum([]byte(secret+plain)) == [sha1.Size]byte(target.sum[:sha1.Size]) {
+	if target.size != sha1.Size {
+		return "", types.ErrVerificationFailed
+	}
+	var sum [sha1.Size]byte
+	if preparedStackInput(secret, plain) {
+		var buf [preparedInputBufferSize]byte
+		sum = sha1.Sum(joinPreparedInput(buf[:], secret, plain))
+	} else {
+		sum = sha1.Sum([]byte(secret + plain))
+	}
+	if sum == [sha1.Size]byte(target.sum[:sha1.Size]) {
 		return plain, nil
 	}
 	return "", types.ErrVerificationFailed
 }
 
 func recoverPreparedSHA1PassSalt(target *PreparedDigest, secret, plain string) (string, error) {
-	if target.size == sha1.Size && sha1.Sum([]byte(plain+secret)) == [sha1.Size]byte(target.sum[:sha1.Size]) {
+	if target.size != sha1.Size {
+		return "", types.ErrVerificationFailed
+	}
+	var sum [sha1.Size]byte
+	if preparedStackInput(plain, secret) {
+		var buf [preparedInputBufferSize]byte
+		sum = sha1.Sum(joinPreparedInput(buf[:], plain, secret))
+	} else {
+		sum = sha1.Sum([]byte(plain + secret))
+	}
+	if sum == [sha1.Size]byte(target.sum[:sha1.Size]) {
 		return plain, nil
 	}
 	return "", types.ErrVerificationFailed
 }
 
 func recoverPreparedSHA256SaltPass(target *PreparedDigest, secret, plain string) (string, error) {
-	if target.size == sha256.Size && sha256.Sum256([]byte(secret+plain)) == target.sum {
+	if target.size != sha256.Size {
+		return "", types.ErrVerificationFailed
+	}
+	var sum [sha256.Size]byte
+	if preparedStackInput(secret, plain) {
+		var buf [preparedInputBufferSize]byte
+		sum = sha256.Sum256(joinPreparedInput(buf[:], secret, plain))
+	} else {
+		sum = sha256.Sum256([]byte(secret + plain))
+	}
+	if sum == target.sum {
 		return plain, nil
 	}
 	return "", types.ErrVerificationFailed
 }
 
 func recoverPreparedSHA256PassSalt(target *PreparedDigest, secret, plain string) (string, error) {
-	if target.size == sha256.Size && sha256.Sum256([]byte(plain+secret)) == target.sum {
+	if target.size != sha256.Size {
+		return "", types.ErrVerificationFailed
+	}
+	var sum [sha256.Size]byte
+	if preparedStackInput(plain, secret) {
+		var buf [preparedInputBufferSize]byte
+		sum = sha256.Sum256(joinPreparedInput(buf[:], plain, secret))
+	} else {
+		sum = sha256.Sum256([]byte(plain + secret))
+	}
+	if sum == target.sum {
 		return plain, nil
 	}
 	return "", types.ErrVerificationFailed
