@@ -2,7 +2,7 @@ package algo
 
 import (
 	"decipher/internal/algo/types"
-	"github.com/winezer0/xutils/utils"
+	utils "github.com/winezer0/xutils/strutils"
 )
 
 // FilterNeedAddToPredbAlogs 从给定算法列表中过滤出需要预计算的算法

@@ -3,7 +3,7 @@ package embeds
 import (
 	"bytes"
 	_ "embed"
-	"github.com/winezer0/xutils/utils"
+	utils "github.com/winezer0/xutils/pathutils"
 	"io"
 	"os"
 )

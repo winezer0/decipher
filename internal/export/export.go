@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/winezer0/xutils/utils"
+	utils "github.com/winezer0/xutils/fileutils"
 )
 
 // ExportCSV 将解密结果追加导出到 CSV 文件。
@@ -16,13 +16,13 @@ func ExportCSV(filePath string, crackerResults []cracker.CrackerResult, overwrit
 	flags := GetFileOpenMode(overwrite)
 	file, err := os.OpenFile(filePath, flags, 0644)
 	if err != nil {
-		return fmt.Errorf("打开文件失败: %w", err)
+		return fmt.Errorf("open file failed: %w", err)
 	}
 	defer file.Close()
 
 	info, err := file.Stat()
 	if err != nil {
-		return fmt.Errorf("获取文件信息失败: %w", err)
+		return fmt.Errorf("get file information failed: %w", err)
 	}
 
 	writer := csv.NewWriter(file)
@@ -31,7 +31,7 @@ func ExportCSV(filePath string, crackerResults []cracker.CrackerResult, overwrit
 	if info.Size() == 0 {
 		header := []string{"hash_salt", "clear_text", "salt", "algo", "algo_type"}
 		if err := writer.Write(header); err != nil {
-			return fmt.Errorf("写入表头失败: %w", err)
+			return fmt.Errorf("write header failed: %w", err)
 		}
 	}
 
@@ -51,7 +51,7 @@ func ExportCSV(filePath string, crackerResults []cracker.CrackerResult, overwrit
 		}
 
 		if err := writer.Write(record); err != nil {
-			return fmt.Errorf("写入记录失败: %w", err)
+			return fmt.Errorf("write record failed: %w", err)
 		}
 	}
 
@@ -84,13 +84,13 @@ func ExportFailureCSV(filePath string, failedTargets map[string]cracker.HashSalt
 	file, err := os.OpenFile(filePath, flags, 0644)
 	//file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return fmt.Errorf("打开文件失败: %w", err)
+		return fmt.Errorf("open file failed: %w", err)
 	}
 	defer file.Close()
 
 	info, err := file.Stat()
 	if err != nil {
-		return fmt.Errorf("获取文件信息失败: %w", err)
+		return fmt.Errorf("get file information failed: %w", err)
 	}
 
 	writer := csv.NewWriter(file)
@@ -99,7 +99,7 @@ func ExportFailureCSV(filePath string, failedTargets map[string]cracker.HashSalt
 	if info.Size() == 0 {
 		header := []string{"hash", "salt"}
 		if err := writer.Write(header); err != nil {
-			return fmt.Errorf("写入表头失败: %w", err)
+			return fmt.Errorf("write header failed: %w", err)
 		}
 	}
 
@@ -109,7 +109,7 @@ func ExportFailureCSV(filePath string, failedTargets map[string]cracker.HashSalt
 			t.Salt,
 		}
 		if err := writer.Write(record); err != nil {
-			return fmt.Errorf("写入记录失败: %w", err)
+			return fmt.Errorf("write record failed: %w", err)
 		}
 	}
 
@@ -121,13 +121,13 @@ func ExportIdentCSV(filePath string, idResults []cracker.IdentResult, overwrite 
 	flags := GetFileOpenMode(overwrite)
 	file, err := os.OpenFile(filePath, flags, 0644)
 	if err != nil {
-		return fmt.Errorf("打开文件失败: %w", err)
+		return fmt.Errorf("open file failed: %w", err)
 	}
 	defer file.Close()
 
 	info, err := file.Stat()
 	if err != nil {
-		return fmt.Errorf("获取文件信息失败: %w", err)
+		return fmt.Errorf("get file information failed: %w", err)
 	}
 
 	writer := csv.NewWriter(file)
@@ -136,7 +136,7 @@ func ExportIdentCSV(filePath string, idResults []cracker.IdentResult, overwrite 
 	if info.Size() == 0 {
 		header := []string{"hash", "algos_names"}
 		if err := writer.Write(header); err != nil {
-			return fmt.Errorf("写入表头失败: %w", err)
+			return fmt.Errorf("write header failed: %w", err)
 		}
 	}
 
@@ -146,7 +146,7 @@ func ExportIdentCSV(filePath string, idResults []cracker.IdentResult, overwrite 
 			strings.Join(r.AlgosNames, "/"),
 		}
 		if err := writer.Write(record); err != nil {
-			return fmt.Errorf("写入记录失败: %w", err)
+			return fmt.Errorf("write record failed: %w", err)
 		}
 	}
 

@@ -2,7 +2,7 @@ package cracker
 
 import (
 	"decipher/internal/algo"
-	"github.com/winezer0/xutils/utils"
+	"sort"
 )
 
 func (e *Engine) RunIdentHash(hashFiles []string) []IdentResult {
@@ -23,7 +23,7 @@ func (e *Engine) RunIdentHash(hashFiles []string) []IdentResult {
 		if len(matched) == 0 {
 			matched = []string{}
 		} else {
-			matched = utils.SortSlice(matched)
+			sort.Strings(matched)
 		}
 
 		identResult := IdentResult{

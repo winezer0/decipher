@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/winezer0/xutils/logging"
+	logging "github.com/winezer0/zaplogs"
 )
 
 // LoadSuccessCacheMap 逐条读取 CSV，仅保留本次目标；重复哈希取最后一条记录。

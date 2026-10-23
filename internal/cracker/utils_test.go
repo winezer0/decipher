@@ -10,7 +10,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/winezer0/xutils/utils"
+	utils "github.com/winezer0/xutils/fileutils"
 )
 
 func dictionaryTestFile(t testing.TB, content string) string {

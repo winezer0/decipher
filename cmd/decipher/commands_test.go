@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"unicode"
 	"unicode/utf8"
 )
 
@@ -17,6 +18,9 @@ func TestCLICommandHelpAndQueries(t *testing.T) {
 		out, code := runCLI(t, dir, args...)
 		if code != 0 || !utf8.ValidString(out) {
 			t.Fatalf("%v exit %d: %s", args, code, out)
+		}
+		if strings.IndexFunc(out, func(r rune) bool { return unicode.Is(unicode.Han, r) }) >= 0 {
+			t.Fatalf("%v produced non-English CLI output: %s", args, out)
 		}
 		requireMissing(t, filepath.Join(dir, "decipher_db"))
 		requireMissing(t, filepath.Join(dir, "decipher_cache"))

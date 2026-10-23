@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/winezer0/xutils/logging"
+	logging "github.com/winezer0/zaplogs"
 )
 
 func encryptAction(engine *cracker.Engine, opts *Options) (err error) {

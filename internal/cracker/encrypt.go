@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/winezer0/xutils/logging"
+	logging "github.com/winezer0/zaplogs"
 )
 
 type EncryptResult struct {

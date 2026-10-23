@@ -3,7 +3,7 @@ package cracker
 import (
 	"bufio"
 	"fmt"
-	"github.com/winezer0/xutils/logging"
+	logging "github.com/winezer0/zaplogs"
 	"os"
 	"strings"
 )

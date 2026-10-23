@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/schollz/progressbar/v3"
-	"github.com/winezer0/xutils/logging"
+	logging "github.com/winezer0/zaplogs"
 )
 
 func BenchmarkProgressDispatch(b *testing.B) {

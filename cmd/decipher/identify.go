@@ -4,7 +4,7 @@ import (
 	"decipher/internal/cracker"
 	"decipher/internal/export"
 	"fmt"
-	"github.com/winezer0/xutils/logging"
+	logging "github.com/winezer0/zaplogs"
 	"path/filepath"
 	"strings"
 )

@@ -9,8 +9,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/winezer0/xutils/logging"
-	"github.com/winezer0/xutils/utils"
+	utils "github.com/winezer0/xutils/pathutils"
+	logging "github.com/winezer0/zaplogs"
 )
 
 const (

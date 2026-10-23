@@ -3,8 +3,8 @@ package cracker
 import (
 	"errors"
 	"fmt"
-	"github.com/winezer0/xutils/logging"
-	"github.com/winezer0/xutils/utils"
+	utils "github.com/winezer0/xutils/fileutils"
+	logging "github.com/winezer0/zaplogs"
 	"os"
 	"path/filepath"
 	"strings"

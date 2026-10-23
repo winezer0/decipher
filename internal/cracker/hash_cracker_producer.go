@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/schollz/progressbar/v3"
-	"github.com/winezer0/xutils/logging"
+	logging "github.com/winezer0/zaplogs"
 )
 
 // Size obtained by RunHashCrack's existing progress calculation; never read or

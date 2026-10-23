@@ -10,7 +10,7 @@ import (
 
 	"github.com/winezer0/xutils/progress"
 
-	"github.com/winezer0/xutils/logging"
+	logging "github.com/winezer0/zaplogs"
 
 	"decipher/internal/algo"
 

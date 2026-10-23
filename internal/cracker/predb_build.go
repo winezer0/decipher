@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/winezer0/xutils/utils"
+	utils "github.com/winezer0/xutils/pathutils"
 
-	"github.com/winezer0/xutils/logging"
+	logging "github.com/winezer0/zaplogs"
 )
 
 type predbRes struct {

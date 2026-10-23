@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/winezer0/xutils/logging"
-	"github.com/winezer0/xutils/utils"
+	utils "github.com/winezer0/xutils/strutils"
+	logging "github.com/winezer0/zaplogs"
 
 	"decipher/internal/algo"
 )

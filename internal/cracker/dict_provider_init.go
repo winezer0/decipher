@@ -3,8 +3,8 @@ package cracker
 import (
 	"strings"
 
-	"github.com/winezer0/xutils/logging"
-	"github.com/winezer0/xutils/utils"
+	utils "github.com/winezer0/xutils/pathutils"
+	logging "github.com/winezer0/zaplogs"
 )
 
 // InitSaltProviders 根据输入的字符串初始化 SaltProvider 列表

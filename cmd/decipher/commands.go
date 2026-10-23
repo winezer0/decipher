@@ -17,17 +17,17 @@ func registerCommands(parser *flags.Parser, opts *Options) map[string]*Options {
 		return cmd
 	}
 	root := parser.Command
-	group(root, "查询", &opts.InfoOptions)
-	group(root, "缓存与维护", &opts.MaintenanceOptions)
-	group(root, "数据目录", &opts.DirectoryOptions)
-	group(root, "失败记录", &opts.FailureOptions)
-	group(root, "日志", &opts.LogOptions)
-	enc := command(root, "enc", "计算明文的哈希或密文")
-	dec := command(root, "dec", "破解哈希或解密密文")
-	id := command(root, "id", "识别哈希算法")
-	dict := command(root, "dict", "管理内置字典和预计算库")
-	add := command(dict, "add", "追加内置字典， 不生成预计算库")
-	init := command(dict, "init", "生成预计算库， 不追加内置字典")
+	group(root, "Information", &opts.InfoOptions)
+	group(root, "Cache and maintenance", &opts.MaintenanceOptions)
+	group(root, "Data directories", &opts.DirectoryOptions)
+	group(root, "Failure records", &opts.FailureOptions)
+	group(root, "Logging", &opts.LogOptions)
+	enc := command(root, "enc", "Hash plaintext or encrypt data")
+	dec := command(root, "dec", "Crack hashes or decrypt ciphertext")
+	id := command(root, "id", "Identify hash algorithms")
+	dict := command(root, "dict", "Manage built-in dictionaries and precomputed databases")
+	add := command(dict, "add", "Append words to built-in dictionaries")
+	init := command(dict, "init", "Build the precomputed database")
 	configs := make(map[*flags.Command]*Options)
 	byName := make(map[string]*Options)
 	for cmd, name := range map[*flags.Command]string{enc: "enc", dec: "dec", id: "id", add: "dict add", init: "dict init"} {
@@ -36,24 +36,24 @@ func registerCommands(parser *flags.Parser, opts *Options) map[string]*Options {
 		configs[cmd], byName[name] = config, config
 	}
 	for _, cmd := range []*flags.Command{enc, dec, init} {
-		group(cmd, "算法", &configs[cmd].AlgorithmOptions)
-		group(cmd, "明文与盐值修饰", &configs[cmd].AffixOptions)
-		group(cmd, "性能", &configs[cmd].WorkerOptions)
+		group(cmd, "Algorithms", &configs[cmd].AlgorithmOptions)
+		group(cmd, "Plaintext and salt modifiers", &configs[cmd].AffixOptions)
+		group(cmd, "Performance", &configs[cmd].WorkerOptions)
 	}
 	for _, cmd := range []*flags.Command{enc, dec, add, init} {
-		group(cmd, "明文字典", &configs[cmd].PlainOptions)
-		group(cmd, "盐值与密钥", &configs[cmd].SecretOptions)
+		group(cmd, "Plaintext dictionaries", &configs[cmd].PlainOptions)
+		group(cmd, "Salts and keys", &configs[cmd].SecretOptions)
 	}
 	for _, cmd := range []*flags.Command{dec, id} {
-		group(cmd, "目标", &configs[cmd].HashOptions)
+		group(cmd, "Targets", &configs[cmd].HashOptions)
 	}
-	group(dec, "哈希格式", &configs[dec].SeparatorOptions)
-	group(dec, "破解控制", &configs[dec].CrackOptions)
+	group(dec, "Hash format", &configs[dec].SeparatorOptions)
+	group(dec, "Cracking options", &configs[dec].CrackOptions)
 	for _, cmd := range []*flags.Command{enc, dec, id} {
-		group(cmd, "输出", &configs[cmd].ResultOptions)
+		group(cmd, "Output", &configs[cmd].ResultOptions)
 	}
 	for _, cmd := range []*flags.Command{enc, dec, id, add, init} {
-		group(cmd, "临时文件", &configs[cmd].TemporaryOptions)
+		group(cmd, "Temporary files", &configs[cmd].TemporaryOptions)
 	}
 	return byName
 }

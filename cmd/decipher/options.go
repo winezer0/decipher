@@ -11,28 +11,28 @@ import (
 
 	"github.com/jessevdk/go-flags"
 	"github.com/winezer0/xutils/cmdutils"
-	"github.com/winezer0/xutils/logging"
-	"github.com/winezer0/xutils/utils"
+	utils "github.com/winezer0/xutils/pathutils"
+	logging "github.com/winezer0/zaplogs"
 )
 
 const (
 	AppName      = "decipher"
 	AppVersion   = "0.1.2"
 	BuildDate    = "2026-04-27"
-	AppShortDesc = "常见哈希快速破解工具"
-	AppLongDesc  = "支持哈希识别、加密、字典破解及预计算数据库管理。"
+	AppShortDesc = "Fast hash recovery tool"
+	AppLongDesc  = "Identify hashes, compute hashes and ciphertexts, crack with dictionaries, and manage precomputed databases."
 )
 
 // Options 命令行参数结构体
 type Options struct {
 	Command       string
-	ActionOptions `group:"操作与算法"`
-	InputOptions  `group:"输入与字典"`
-	AffixOptions  `group:"明文与盐值修饰"`
-	WorkerOptions `group:"性能"`
-	OutputOptions `group:"输出"`
-	CacheOptions  `group:"缓存与维护"`
-	LogOptions    `group:"日志"`
+	ActionOptions `group:"Actions and algorithms"`
+	InputOptions  `group:"Input and dictionaries"`
+	AffixOptions  `group:"Plaintext and salt modifiers"`
+	WorkerOptions `group:"Performance"`
+	OutputOptions `group:"Output"`
+	CacheOptions  `group:"Cache and maintenance"`
+	LogOptions    `group:"Logging"`
 }
 
 type ActionOptions struct {
@@ -41,13 +41,13 @@ type ActionOptions struct {
 }
 
 type AlgorithmOptions struct {
-	AlgoKeys     []string `short:"a" long:"algos" value-name:"STRINGS" description:"算法筛选关键词， 例如 md5； 未指定时选择全部"`
-	AlgosPrecise bool     `short:"A" long:"precise" description:"按算法名称精确匹配"`
+	AlgoKeys     []string `short:"a" long:"algos" value-name:"STRINGS" description:"Filter algorithms by keyword (for example, md5); select all when omitted"`
+	AlgosPrecise bool     `short:"A" long:"precise" description:"Match algorithm names exactly"`
 }
 
 type InfoOptions struct {
-	ListAlgos bool `short:"L" long:"list" description:"列出所有可用算法并退出"`
-	Version   bool `short:"v" long:"version" description:"显示程序版本并退出"`
+	ListAlgos bool `short:"L" long:"list" description:"List all available algorithms and exit"`
+	Version   bool `short:"v" long:"version" description:"Show version information and exit"`
 }
 
 type InputOptions struct {
@@ -57,27 +57,27 @@ type InputOptions struct {
 	SeparatorOptions
 }
 type HashOptions struct {
-	Hashes []string `short:"i" long:"hashes" value-name:"STRINGS" description:"哈希、密文或文件； 支持 file:/str:/gen:"`
+	Hashes []string `short:"i" long:"hashes" value-name:"STRINGS" description:"Hashes, ciphertexts, or files; supports file:/str:/gen:"`
 }
 type PlainOptions struct {
-	UsedPlains []string `short:"p" long:"plains" value-name:"STRINGS" description:"明文或候选字典； - 表示内置字典"`
+	UsedPlains []string `short:"p" long:"plains" value-name:"STRINGS" description:"Plaintext values or candidate dictionaries; - selects the built-in dictionary"`
 }
 type SecretOptions struct {
-	UsedSecrets []string `short:"s" long:"secrets" value-name:"STRINGS" description:"盐值、密钥或字典； - 表示内置盐字典"`
+	UsedSecrets []string `short:"s" long:"secrets" value-name:"STRINGS" description:"Salts, keys, or dictionaries; - selects the built-in salt dictionary"`
 }
 type SeparatorOptions struct {
-	ConcatSymbol string `long:"concat-symbol" value-name:"STRING" description:"哈希各部分的分隔符" default:":"`
+	ConcatSymbol string `long:"concat-symbol" value-name:"STRING" description:"Separator between hash fields" default:":"`
 }
 
 type AffixOptions struct {
-	SaltPrefix string `long:"sp" value-name:"STRING" description:"盐值前缀" default:""`
-	SaltSuffix string `long:"ss" value-name:"STRING" description:"盐值后缀" default:""`
-	PassPrefix string `long:"pp" value-name:"STRING" description:"明文前缀" default:""`
-	PassSuffix string `long:"ps" value-name:"STRING" description:"明文后缀" default:""`
+	SaltPrefix string `long:"sp" value-name:"STRING" description:"Prefix added to salts" default:""`
+	SaltSuffix string `long:"ss" value-name:"STRING" description:"Suffix added to salts" default:""`
+	PassPrefix string `long:"pp" value-name:"STRING" description:"Prefix added to plaintext candidates" default:""`
+	PassSuffix string `long:"ps" value-name:"STRING" description:"Suffix added to plaintext candidates" default:""`
 }
 
 type WorkerOptions struct {
-	Workers int `short:"w" long:"workers" value-name:"INT" description:"并发工作数； 0 表示按 CPU 数量设置" default:"0"`
+	Workers int `short:"w" long:"workers" value-name:"INT" description:"Number of workers; 0 selects a value based on the CPU count" default:"0"`
 }
 
 type OutputOptions struct {
@@ -85,11 +85,11 @@ type OutputOptions struct {
 	FailureOptions
 }
 type ResultOptions struct {
-	Output     string `short:"o" long:"output" value-name:"PATH" description:"输出目录； 同名结果文件默认覆盖" default:"."`
-	OutputType string `short:"O" long:"output-type" value-name:"STRING" description:"输出格式： csv 或 json" choice:"csv" choice:"json" default:"csv"`
+	Output     string `short:"o" long:"output" value-name:"PATH" description:"Output directory; same-named result files are overwritten" default:"."`
+	OutputType string `short:"O" long:"output-type" value-name:"STRING" description:"Output format: csv or json" choice:"csv" choice:"json" default:"csv"`
 }
 type FailureOptions struct {
-	FailureCache string `long:"failure-cache" value-name:"PATH" description:"失败记录文件名， 相对于输出目录" default:"decipher.failure.csv"`
+	FailureCache string `long:"failure-cache" value-name:"PATH" description:"Failure-record filename, relative to the output directory" default:"decipher.failure.csv"`
 }
 
 type CacheOptions struct {
@@ -99,53 +99,52 @@ type CacheOptions struct {
 	DirectoryOptions
 }
 type MaintenanceOptions struct {
-	DedupPredb bool `short:"D" long:"dc" description:"预计算库文件去重， 完成后退出"`
-	ClearCache bool `short:"C" long:"cc" description:"清空预计算库、 缓存及失败记录后退出"`
+	DedupPredb bool `short:"D" long:"dc" description:"Deduplicate precomputed database files and exit"`
+	ClearCache bool `short:"C" long:"cc" description:"Clear precomputed databases, caches, and failure records, then exit"`
 }
 type TemporaryOptions struct {
-	RemoveTemp bool `short:"R" long:"rr" description:"成功或失败后， 清理本次临时字典"`
+	RemoveTemp bool `short:"R" long:"rr" description:"Remove temporary dictionaries created by this run after success or failure"`
 }
 type CrackOptions struct {
-	NoPredbCrack bool `long:"npc" description:"禁用预计算库查询， 改为现场计算"`
-	NoDynaCrack  bool `long:"ndc" description:"跳过动态哈希破解"`
+	NoPredbCrack bool `long:"npc" description:"Disable precomputed database lookup and use runtime calculation"`
+	NoDynaCrack  bool `long:"ndc" description:"Skip dynamic hash cracking"`
 }
 type DirectoryOptions struct {
-	PredbDir    string `long:"predb-dir" value-name:"PATH" description:"预计算库、 内置字典的目录" default:"decipher_db"`
-	RunCacheDir string `long:"run-cache-dir" value-name:"PATH" description:"临时字典的目录" default:"decipher_cache"`
+	PredbDir    string `long:"predb-dir" value-name:"PATH" description:"Directory for precomputed databases and built-in dictionaries" default:"decipher_db"`
+	RunCacheDir string `long:"run-cache-dir" value-name:"PATH" description:"Directory for temporary dictionaries" default:"decipher_cache"`
 }
 
 type LogOptions struct {
-	LogLevel      string `long:"ll" value-name:"STRING" description:"日志级别： debug/info/warn/error" default:"info"`
-	LogFile       string `long:"lf" value-name:"PATH" description:"日志文件路径"`
-	ConsoleFormat string `long:"lcf" value-name:"STRING" description:"日志格式： T 时间、 L 级别、 C 位置、 F 函数、 M 消息； 空值或 off 关闭" default:"LM"`
+	LogLevel      string `long:"ll" value-name:"STRING" description:"Log level: debug/info/warn/error" default:"info"`
+	LogFile       string `long:"lf" value-name:"PATH" description:"Log file path"`
+	ConsoleFormat string `long:"lcf" value-name:"STRING" description:"Console log format: T time, L level, C source, F function, M message; empty or off disables logging" default:"LM"`
 }
 
-const AppInputHelp = `
-输入说明：
-  file:路径    从文件逐行读取，例如 file:hashes.txt
-  str:内容     将内容作为字符串，例如 str:123456
-  gen:规则     按规则生成字典，具体规则参见 README
-  不带前缀时， 优先读取同名文件； 不存在则作为字符串。
-  -p - 和 -s - 使用内置字典，不表示标准输入。
-  多个值可重复传入， 或用逗号分隔； 字符串和路径也会被拆分。
-  dec 默认使用内置字典； enc 必须通过 -p 提供明文。
-  每次运行选择 enc、 dec、 id、 dict add 或 dict init。
-  dict add 仅追加内置字典； dict init 仅生成预计算库。
-  dict init 未指定 -p/-s 时读取相应内置字典。
-  --cc/--dc 可独立执行维护， 完成后退出。
-  enc/dec/id 同名结果文件默认覆盖； 失败记录有新数据时覆盖。
-  成功缓存、 内置字典和预计算库沿用追加规则。
-  显式 file: 文件无效时立即失败， 不回退到内置字典。
-  STRINGS 表示字符串列表， STRING 表示字符串， INT 表示整数， PATH 表示路径。
+const AppInputHelp = `Input formats:
+  file:PATH    Read lines from a file, for example file:hashes.txt
+  str:VALUE    Treat the value as a string, for example str:123456
+  gen:RULE     Generate dictionary entries according to a rule (see README)
+  Without a prefix, an existing file is read; otherwise the value is treated as a string.
+  -p - and -s - select built-in dictionaries; they do not mean standard input.
+  Pass multiple values with repeated flags or comma-separated items; commas in strings and paths are split.
+  dec uses the built-in dictionary by default; enc requires plaintext via -p.
+  Choose one operation per run: enc, dec, id, dict add, or dict init.
+  dict add only appends built-in dictionaries; dict init only builds the precomputed database.
+  dict init reads the corresponding built-in dictionary when -p/-s is omitted.
+  --cc/--dc run maintenance operations independently and exit.
+  enc/dec/id overwrite same-named result files; failure records are overwritten when new failures exist.
+  Success cache, built-in dictionaries, and precomputed databases follow their existing append behavior.
+  An invalid explicit file: input fails immediately and never falls back to a built-in dictionary.
+  STRINGS means a list of strings, STRING a string, INT an integer, and PATH a filesystem path.
 
-示例：
-  查看当前支持算法：		decipher --list
-  识别哈希并保存结果：		decipher id -i file:hashes.txt -o .
-  计算明文的 MD5：		decipher enc -p str:123456 -a 'md5($pass)' -A
-  使用字典破解 MD5：		decipher dec -i file:hashes.txt -p file:words.txt -a 'md5($pass)' -A
-  使用内置字典破解：		decipher dec -i file:hashes.txt -p -
-  追加内置字典：		decipher dict add -p file:words.txt
-  生成预计算库：		decipher dict init -a 'md5($pass)' -A
+Examples:
+  List available algorithms:        decipher --list
+  Identify hashes and save results: decipher id -i file:hashes.txt -o .
+  Compute an MD5 hash:              decipher enc -p str:123456 -a 'md5($pass)' -A
+  Crack MD5 with a dictionary:      decipher dec -i file:hashes.txt -p file:words.txt -a 'md5($pass)' -A
+  Use the built-in dictionary:      decipher dec -i file:hashes.txt -p -
+  Append to built-in dictionaries:  decipher dict add -p file:words.txt
+  Build the precomputed database:   decipher dict init -a 'md5($pass)' -A
 `
 
 func InitOptionsArgs(minimumParams int) (*Options, *flags.Parser) {
@@ -155,7 +154,7 @@ func InitOptionsArgs(minimumParams int) (*Options, *flags.Parser) {
 	opts.ConcatSymbol = ":"
 	parser := flags.NewNamedParser(AppName, flags.Default)
 	parser.Name = AppName
-	parser.Usage = "[选项]"
+	parser.Usage = "[OPTIONS]"
 	parser.ShortDescription = AppShortDesc
 	parser.LongDescription = AppLongDesc + "\n" + AppInputHelp
 	parser.SubcommandsOptional = true // 根级查询和维护命令无需业务子命令。

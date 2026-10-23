@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/winezer0/xutils/logging"
+	logging "github.com/winezer0/zaplogs"
 )
 
 // RunDecrypt 使用加密/编码算法对密文进行解密

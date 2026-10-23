@@ -5,7 +5,7 @@ import (
 	"decipher/internal/cracker"
 	"errors"
 	"fmt"
-	"github.com/winezer0/xutils/logging"
+	logging "github.com/winezer0/zaplogs"
 	"io"
 	"os"
 )

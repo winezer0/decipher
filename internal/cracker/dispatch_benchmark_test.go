@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/winezer0/xutils/logging"
+	logging "github.com/winezer0/zaplogs"
 )
 
 func BenchmarkUnusedPassDispatch(b *testing.B) {

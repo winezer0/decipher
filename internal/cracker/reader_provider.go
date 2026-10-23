@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/winezer0/xutils/logging"
+	logging "github.com/winezer0/zaplogs"
 )
 
 type dictReaderProvider func() (io.ReadSeeker, error)
