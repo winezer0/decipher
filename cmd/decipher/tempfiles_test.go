@@ -15,8 +15,8 @@ func TestCLITemporaryFilesOnFailure(t *testing.T) {
 		{"dec", "-i", "str:" + testHash, "-p", "str:123456", "-s", "gen:invalid"},
 		{"id", "-i", "str:" + testHash, "-i", "gen:invalid"},
 		{"id", "-i", "str:" + testHash, "-o", "blocked"},
-		{"dict", "init", "-p", "str:123456", "-s", "gen:invalid"},
-		{"dict", "add", "-p", "str:123456", "-s", "gen:invalid"},
+		{"predb-init", "-p", "str:123456", "-s", "gen:invalid"},
+		{"dict-add", "-p", "str:123456", "-s", "gen:invalid"},
 	}
 	for _, args := range cases {
 		for _, remove := range []bool{false, true} {
@@ -25,7 +25,7 @@ func TestCLITemporaryFilesOnFailure(t *testing.T) {
 				writeFixture(t, dir, "blocked", "not a directory")
 				marker := writeFixture(t, dir, "decipher_cache/user.txt", "keep")
 				cliArgs := append([]string{}, args...)
-				if args[0] != "id" && !(args[0] == "dict" && args[1] == "add") {
+				if args[0] != "id" && args[0] != "dict-add" {
 					cliArgs = append(cliArgs, "-a", "md5($pass)", "-A")
 				}
 				if remove {

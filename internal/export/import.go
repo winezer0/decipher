@@ -2,7 +2,7 @@ package export
 
 import (
 	"bufio"
-	"decipher/internal/cracker"
+	"github.com/winezer0/decipher/internal/cracker"
 	"encoding/csv"
 	"io"
 	"os"

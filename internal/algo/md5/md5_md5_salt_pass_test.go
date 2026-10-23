@@ -3,7 +3,7 @@ package md5
 import (
 	"testing"
 
-	"decipher/internal/algo/types"
+	"github.com/winezer0/decipher/internal/algo/types"
 )
 
 func TestMD5MD5SaltPassAlgo_GetAlgoType(t *testing.T) {

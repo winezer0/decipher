@@ -1,8 +1,8 @@
 package main
 
 import (
-	"decipher/internal/cracker"
-	"decipher/internal/export"
+	"github.com/winezer0/decipher/internal/cracker"
+	"github.com/winezer0/decipher/internal/export"
 	"os"
 	"path/filepath"
 	"strings"

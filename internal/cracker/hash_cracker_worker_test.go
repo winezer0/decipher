@@ -2,9 +2,9 @@ package cracker
 
 import (
 	"context"
-	"decipher/internal/algo"
-	"decipher/internal/algo/md5"
-	"decipher/internal/algo/types"
+	"github.com/winezer0/decipher/internal/algo"
+	"github.com/winezer0/decipher/internal/algo/md5"
+	"github.com/winezer0/decipher/internal/algo/types"
 	"fmt"
 	"reflect"
 	"strings"

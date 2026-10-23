@@ -1,7 +1,7 @@
 package cracker
 
 import (
-	"decipher/internal/algo"
+	"github.com/winezer0/decipher/internal/algo"
 	"sync"
 	"time"
 
@@ -14,6 +14,16 @@ import (
 // algorithms: 加密算法名称列表
 // workers: 并发工作数
 func (e *Engine) RunDecrypt(targets []HashSaltTarget, secretDicts []string, decryptAlogs []algo.Algorithm) []CrackerResult {
+	return e.runDecryptWithProviders(targets, InitSaltProviders(secretDicts), decryptAlogs)
+}
+
+// RunDecryptValues decrypts targets using literal in-memory secret values.
+func (e *Engine) RunDecryptValues(targets []HashSaltTarget, secrets []string, decryptAlgos []algo.Algorithm) []CrackerResult {
+	return e.runDecryptWithProviders(targets, InitValueSaltProviders(secrets), decryptAlgos)
+}
+
+// runDecryptWithProviders runs reversible algorithms with the provided secret sources.
+func (e *Engine) runDecryptWithProviders(targets []HashSaltTarget, saltProviders []SaltProvider, decryptAlogs []algo.Algorithm) []CrackerResult {
 	workers := e.workers
 	var allResults []CrackerResult
 	if len(targets) == 0 {
@@ -30,8 +40,6 @@ func (e *Engine) RunDecrypt(targets []HashSaltTarget, secretDicts []string, decr
 		logging.Infof("  - %s", a.Name())
 	}
 
-	// 加载密钥源 (使用 SaltProvider 流式处理)
-	saltProviders := InitSaltProviders(secretDicts)
 	// Calculate total count if possible (optional)
 
 	startTime := time.Now()
@@ -81,11 +89,7 @@ func (e *Engine) RunDecrypt(targets []HashSaltTarget, secretDicts []string, decr
 		defer close(jobs)
 		for _, target := range targets {
 			for _, alg := range decryptAlogs {
-				// 优化: 使用 Identify 过滤不适用的算法
-				if !alg.Identify(target.Hash) {
-					continue
-				}
-
+				// Reversible ciphertexts may not satisfy an algorithm's hash-identification heuristic.
 				if !alg.NeedSalt() {
 					jobs <- job{target: target, secret: "", alg: alg}
 					continue

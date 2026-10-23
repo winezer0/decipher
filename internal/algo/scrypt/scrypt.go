@@ -1,13 +1,13 @@
 package scrypt
 
 import (
-	"decipher/internal/myutils"
+	"github.com/winezer0/decipher/internal/myutils"
 	"encoding/base64"
 	"fmt"
 	"strconv"
 	"strings"
 
-	"decipher/internal/algo/types"
+	"github.com/winezer0/decipher/internal/algo/types"
 
 	"golang.org/x/crypto/scrypt"
 )

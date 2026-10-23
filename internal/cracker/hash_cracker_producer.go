@@ -60,10 +60,14 @@ func (e *Engine) crackProducer(ctx context.Context, taskChan chan<- crackTask, r
 	// especially when salts are generated dynamically or read from a large file.
 	plainBatchSize := 10000 // Process 10,000 plaintexts per batch
 	var plainBatch []string
+	preservePlaintexts := len(options) > 0 && options[0].preservePlaintexts
 
 	count := 0
 	for scanner.Scan() {
-		text := strings.TrimSpace(scanner.Text())
+		text := scanner.Text()
+		if !preservePlaintexts {
+			text = strings.TrimSpace(text)
+		}
 		// Even empty lines contribute to reading progress (bytes read),
 		// though we skip processing them.
 		// Approximate line bytes (content + newline).

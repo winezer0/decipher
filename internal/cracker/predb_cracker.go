@@ -3,8 +3,8 @@ package cracker
 import (
 	"bufio"
 	"context"
-	"decipher/internal/algo/types"
 	"fmt"
+	"github.com/winezer0/decipher/internal/algo/types"
 	"io"
 	"os"
 	"path/filepath"
@@ -15,7 +15,7 @@ import (
 	utils "github.com/winezer0/xutils/strutils"
 	logging "github.com/winezer0/zaplogs"
 
-	"decipher/internal/algo"
+	"github.com/winezer0/decipher/internal/algo"
 )
 
 func (e *Engine) RunPredbCrack(targets []HashSaltTarget, selectedAlgos []algo.Algorithm) []CrackerResult {
@@ -52,7 +52,8 @@ func (e *Engine) RunPredbCrack(targets []HashSaltTarget, selectedAlgos []algo.Al
 	}
 	sem := make(chan struct{}, concurrency)
 
-	cacheFiles, err := os.ReadDir(e.PredbDir)
+	dbDir := e.predbScopeDir()
+	cacheFiles, err := os.ReadDir(dbDir)
 	if err != nil {
 		logging.Errorf("Failed to read cache directory: %v", err)
 		return allResults
@@ -84,7 +85,7 @@ func (e *Engine) RunPredbCrack(targets []HashSaltTarget, selectedAlgos []algo.Al
 				defer wg.Done()
 				defer func() { <-sem }() // 释放信号量
 
-				cacheDbPath := filepath.Join(e.PredbDir, cFile.Name())
+				cacheDbPath := filepath.Join(dbDir, cFile.Name())
 				fobj, err := os.Open(cacheDbPath)
 				if err != nil {
 					logging.Errorf("Failed to open cache file %s: %v", cacheDbPath, err)

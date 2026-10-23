@@ -2,7 +2,7 @@ package md5
 
 import (
 	stdmd5 "crypto/md5"
-	"decipher/internal/algo/types"
+	"github.com/winezer0/decipher/internal/algo/types"
 	"encoding/hex"
 	"fmt"
 	"strings"

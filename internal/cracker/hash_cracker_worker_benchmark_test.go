@@ -1,9 +1,9 @@
 package cracker
 
 import (
-	"decipher/internal/algo"
-	"decipher/internal/algo/md5"
-	"decipher/internal/algo/sha"
+	"github.com/winezer0/decipher/internal/algo"
+	"github.com/winezer0/decipher/internal/algo/md5"
+	"github.com/winezer0/decipher/internal/algo/sha"
 	"fmt"
 	"strings"
 	"testing"

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -12,12 +13,29 @@ import (
 
 	logging "github.com/winezer0/zaplogs"
 
-	"decipher/internal/algo"
+	"github.com/winezer0/decipher/internal/algo"
 
 	"github.com/schollz/progressbar/v3"
 )
 
 func (e *Engine) RunHashCrack(targets []HashSaltTarget, plainFiles []string, secretFiles []string, hashAlgos []algo.Algorithm) []CrackerResult {
+	return e.runHashCrackSources(targets, InitDictProvider(plainFiles), InitSaltProviders(secretFiles), hashAlgos, false)
+}
+
+// RunHashCrackValues cracks targets using in-memory plaintext and secret values.
+func (e *Engine) RunHashCrackValues(targets []HashSaltTarget, plaintexts, secrets []string, hashAlgos []algo.Algorithm) []CrackerResult {
+	content := strings.Join(plaintexts, "\n")
+	source := dictSource{
+		Name: "SDK memory values",
+		Provider: func() (io.ReadSeeker, error) {
+			return strings.NewReader(content), nil
+		},
+	}
+	return e.runHashCrackSources(targets, []dictSource{source}, InitValueSaltProviders(secrets), hashAlgos, true)
+}
+
+// runHashCrackSources runs shared recovery logic over prepared plaintext and salt sources.
+func (e *Engine) runHashCrackSources(targets []HashSaltTarget, plainDictSources []dictSource, saltProviders []SaltProvider, hashAlgos []algo.Algorithm, preservePlaintexts bool) []CrackerResult {
 	var allResults []CrackerResult
 	if len(targets) == 0 {
 		return allResults
@@ -32,12 +50,8 @@ func (e *Engine) RunHashCrack(targets []HashSaltTarget, plainFiles []string, sec
 	for _, a := range hashAlgos {
 		logging.Infof("  - %s", a.Name())
 	}
-	// 加载明文字典文件
-	plainDictSources := InitDictProvider(plainFiles)
 	logging.Infof("Using %d dictionary source(s)", len(plainDictSources))
 
-	// 加载盐提供者
-	saltProviders := InitSaltProviders(secretFiles)
 	logging.Infof("Using %d salt provider(s)", len(saltProviders))
 
 	// 开始进行解密
@@ -88,7 +102,7 @@ func (e *Engine) RunHashCrack(targets []HashSaltTarget, plainFiles []string, sec
 			}
 			crackerResults = e.runPreparedHashCrack(*prepared, saltProviders, crackReader, startTime, bar, e.SaltPrefix != "" || e.SaltSuffix != "")
 		} else {
-			crackerResults = e.runHashCrackWithDictStream(targets, hashAlgos, saltProviders, crackReader, startTime, bar)
+			crackerResults = e.runHashCrackWithDictStream(targets, hashAlgos, saltProviders, crackReader, startTime, bar, preservePlaintexts)
 		}
 		for _, res := range crackerResults {
 			allResults = append(allResults, res)
@@ -118,7 +132,12 @@ type crackTask struct {
 
 type preparedSaltBatch struct{ values []string }
 
-type crackDispatchOptions struct{ shareSaltAffixes, skipFixed, skipDynamic bool }
+type crackDispatchOptions struct {
+	shareSaltAffixes   bool
+	skipFixed          bool
+	skipDynamic        bool
+	preservePlaintexts bool
+}
 
 func purePreparedAlgorithms(algos []algo.Algorithm) bool {
 	if len(algos) == 0 {
@@ -253,13 +272,13 @@ func (e *Engine) prepareCrackStrategies(targets []HashSaltTarget, algos []algo.A
 	return strategies
 }
 
-func (e *Engine) runHashCrackWithDictStream(hashSaltTargets []HashSaltTarget, algos []algo.Algorithm, saltProviders []SaltProvider, reader io.Reader, startTime time.Time, bar *progressbar.ProgressBar) []CrackerResult {
+func (e *Engine) runHashCrackWithDictStream(hashSaltTargets []HashSaltTarget, algos []algo.Algorithm, saltProviders []SaltProvider, reader io.Reader, startTime time.Time, bar *progressbar.ProgressBar, preservePlaintexts ...bool) []CrackerResult {
 	strategies := e.prepareCrackStrategies(hashSaltTargets, algos)
 	shareAffixes := (e.SaltPrefix != "" || e.SaltSuffix != "") && purePreparedAlgorithms(algos)
-	return e.runPreparedHashCrack(strategies, saltProviders, reader, startTime, bar, shareAffixes)
+	return e.runPreparedHashCrack(strategies, saltProviders, reader, startTime, bar, shareAffixes, preservePlaintexts...)
 }
 
-func (e *Engine) runPreparedHashCrack(strategies crackStrategies, saltProviders []SaltProvider, reader io.Reader, startTime time.Time, bar *progressbar.ProgressBar, shareAffixes bool) []CrackerResult {
+func (e *Engine) runPreparedHashCrack(strategies crackStrategies, saltProviders []SaltProvider, reader io.Reader, startTime time.Time, bar *progressbar.ProgressBar, shareAffixes bool, preservePlaintexts ...bool) []CrackerResult {
 	var results []CrackerResult
 	var mu sync.Mutex
 
@@ -290,6 +309,9 @@ func (e *Engine) runPreparedHashCrack(strategies crackStrategies, saltProviders 
 
 	// 生产者：读取明文 -> 读取 Salt 流 -> 生成任务
 	options := crackDispatchOptions{shareSaltAffixes: shareAffixes, skipFixed: len(strategies.fixed) == 0, skipDynamic: len(strategies.dynamic) == 0}
+	if len(preservePlaintexts) > 0 {
+		options.preservePlaintexts = preservePlaintexts[0]
+	}
 	go e.crackProducer(ctx, taskChan, reader, saltProviders, bar, startTime, options)
 
 	for res := range resultChan {

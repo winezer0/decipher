@@ -170,7 +170,7 @@ func saltPipelineStreamState(marker string) (running, blocked bool) {
 // 隔离进程避免其他测试的同类流影响协程退出检查，不通过排空通道来掩盖阻塞。
 func TestSaltPipelineCancellation(t *testing.T) {
 	if kind := os.Getenv("DECIPHER_SALT_PIPELINE_CANCEL"); kind != "" {
-		marker := "decipher/internal/cracker.(*" + map[string]string{"memory": "Memory", "file": "File", "generator": "Generator", "multi": "Multi"}[kind] + "SaltProvider).GenerateStream"
+		marker := "github.com/winezer0/decipher/internal/cracker.(*" + map[string]string{"memory": "Memory", "file": "File", "generator": "Generator", "multi": "Multi"}[kind] + "SaltProvider).GenerateStream"
 		newProvider := func() SaltProvider {
 			source := kind
 			if source == "multi" {
@@ -208,7 +208,7 @@ func TestSaltPipelineCancellation(t *testing.T) {
 			if !saltPipelineWait(t, func() bool {
 				running, _ := saltPipelineStreamState(marker)
 				if kind == "multi" {
-					child, _ := saltPipelineStreamState("decipher/internal/cracker.(*MemorySaltProvider).GenerateStream")
+					child, _ := saltPipelineStreamState("github.com/winezer0/decipher/internal/cracker.(*MemorySaltProvider).GenerateStream")
 					running = running || child
 				}
 				return !running

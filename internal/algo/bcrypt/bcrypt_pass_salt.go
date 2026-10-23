@@ -1,11 +1,11 @@
 package bcrypt
 
 import (
-	"decipher/internal/ident"
+	"github.com/winezer0/decipher/internal/ident"
 
 	"golang.org/x/crypto/bcrypt"
 
-	"decipher/internal/algo/types"
+	"github.com/winezer0/decipher/internal/algo/types"
 )
 
 type BcryptPassSaltAlgo struct{}

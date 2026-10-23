@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"decipher/internal/algo"
-	"decipher/internal/algo/types"
+	"github.com/winezer0/decipher/internal/algo"
+	"github.com/winezer0/decipher/internal/algo/types"
 )
 
 type mockDynamicSaltAlgo struct{}

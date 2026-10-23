@@ -3,7 +3,7 @@ package mysql
 import (
 	"testing"
 
-	"decipher/internal/algo/types"
+	"github.com/winezer0/decipher/internal/algo/types"
 )
 
 func TestMySQL5Algo_GetAlgoType(t *testing.T) {

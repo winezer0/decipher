@@ -13,6 +13,10 @@ A high-performance hash recovery tool written in Go. It identifies hash algorith
 - Stream large dictionaries and salt sources with concurrent workers.
 - Export results as CSV or JSON.
 
+## Go SDK
+
+Go programs can call the application through its in-process SDK. See the [Go SDK API documentation](sdk/README.md).
+
 ## Commands
 
 | Command | Purpose |
@@ -20,8 +24,8 @@ A high-performance hash recovery tool written in Go. It identifies hash algorith
 | `enc` | Compute hashes or ciphertexts from plaintexts. |
 | `dec` | Crack hashes or decrypt ciphertexts. |
 | `id` | Identify possible hash algorithms. |
-| `dict add` | Append user-provided entries to built-in dictionaries. |
-| `dict init` | Generate precomputed database entries. |
+| `dict-add` | Append user-provided entries to built-in dictionaries. |
+| `predb-init` | Generate precomputed database entries. |
 
 Run `decipher --help` or append `--help` to a command to see native command-line help.
 
@@ -46,8 +50,8 @@ Examples use `./decipher` on Linux/macOS. In Windows PowerShell, use `.\decipher
 ./decipher dec -i file:hashes.txt -p -
 
 # Append a user dictionary and build an MD5 precomputed database
-./decipher dict add -p file:words.txt
-./decipher dict init -a 'md5($pass)' -A
+./decipher dict-add -p file:words.txt
+./decipher predb-init -a 'md5($pass)' -A
 
 # Deduplicate precomputed data, or clear caches and failure records
 ./decipher --dc
@@ -90,8 +94,8 @@ Choose inputs according to the command: `enc` reads plaintexts from `-p` and acc
 | `-s, --secrets STRINGS` | Salts, keys, or dictionaries of salts/keys. |
 | `-a, --algos STRINGS` | Filter algorithms by keyword. Partial matching is supported; defaults to all available algorithms. |
 | `-A, --precise` | Match the algorithm name exactly when used with `-a`. |
-| `--sp STRING`, `--ss STRING` | Add a prefix or suffix to each salt. |
-| `--pp STRING`, `--ps STRING` | Add a prefix or suffix to each plaintext candidate. |
+| `--sp STRING`, `--ss STRING` | Add a prefix or suffix to salt and key candidates; select the matching precomputed cache scope. |
+| `--pp STRING`, `--ps STRING` | Add a prefix or suffix to plaintext candidates; select the matching precomputed cache scope. |
 | `-w, --workers INT` | Number of workers. `0` selects a value based on the CPU count. |
 | `-o, --output PATH` | Output directory, default `.`. Same-named result files are overwritten. |
 | `-O, --output-type csv\|json` | Result format, default `csv`. |
@@ -108,7 +112,9 @@ Choose inputs according to the command: `enc` reads plaintexts from `-p` and acc
 | `-L, --list` | List all available algorithms and exit. |
 | `-v, --version` | Show version information and exit. |
 
-Each run selects one operation. `dict add` only appends to built-in dictionaries and requires `-p` or `-s`. `dict init` only writes precomputed data; when `-p` or `-s` is omitted, it reads the corresponding built-in dictionary. Result files for `enc`, `dec`, and `id` are overwritten. Success cache, built-in dictionaries, and precomputed database entries follow their existing append behavior.
+Each run selects one operation. `dict-add` only appends to built-in dictionaries and requires `-p` or `-s`. `predb-init` only writes precomputed data; when `-p` or `-s` is omitted, it reads the corresponding built-in dictionary. Result files for `enc`, `dec`, and `id` are overwritten. Success cache, built-in dictionaries, and precomputed database entries follow their existing append behavior.
+
+`enc` and live hash recovery in `dec` apply the same plaintext and salt affixes. Reversible decryption applies only salt affixes to candidate keys. `predb-init` builds entries with the current affix values; `dec` reads the matching cache scope and automatically builds that scope when needed. Non-empty affix combinations use separate cache scopes, including success caches, so results from different settings cannot mix. `--dc` deduplicates precomputed files in all scopes.
 
 ## Output files
 
@@ -143,8 +149,8 @@ Identify algorithms and write results to the current directory:
 Append a user dictionary and generate precomputed data:
 
 ```bash
-./decipher dict add -p file:words.txt
-./decipher dict init -a 'md5($pass)' -A
+./decipher dict-add -p file:words.txt
+./decipher predb-init -a 'md5($pass)' -A
 ```
 
 Write JSON output:

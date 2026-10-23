@@ -1,7 +1,7 @@
 package cracker
 
 import (
-	"decipher/internal/algo"
+	"github.com/winezer0/decipher/internal/algo"
 	"sort"
 )
 

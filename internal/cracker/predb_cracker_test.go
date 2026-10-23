@@ -2,7 +2,7 @@ package cracker
 
 import (
 	"context"
-	"decipher/internal/algo"
+	"github.com/winezer0/decipher/internal/algo"
 	"os"
 	"path/filepath"
 	"strings"

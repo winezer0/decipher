@@ -2,8 +2,8 @@ package bcrypt
 
 import (
 	"crypto/md5"
-	"decipher/internal/algo/types"
-	"decipher/internal/ident"
+	"github.com/winezer0/decipher/internal/algo/types"
+	"github.com/winezer0/decipher/internal/ident"
 
 	"golang.org/x/crypto/bcrypt"
 )

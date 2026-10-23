@@ -2,10 +2,10 @@ package md5
 
 import (
 	"crypto/md5"
-	"decipher/internal/ident"
+	"github.com/winezer0/decipher/internal/ident"
 	"encoding/hex"
 
-	"decipher/internal/algo/types"
+	"github.com/winezer0/decipher/internal/algo/types"
 )
 
 // MD5Algo standard md5($pass)

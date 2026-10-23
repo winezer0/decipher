@@ -1,7 +1,7 @@
 package cracker
 
 import (
-	"decipher/internal/embeds"
+	"github.com/winezer0/decipher/internal/embeds"
 	"io"
 	"os"
 

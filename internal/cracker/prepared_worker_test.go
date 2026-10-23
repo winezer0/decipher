@@ -2,9 +2,9 @@ package cracker
 
 import (
 	"crypto/sha256"
-	"decipher/internal/algo"
-	hashsha "decipher/internal/algo/sha"
-	"decipher/internal/algo/types"
+	"github.com/winezer0/decipher/internal/algo"
+	hashsha "github.com/winezer0/decipher/internal/algo/sha"
+	"github.com/winezer0/decipher/internal/algo/types"
 	"fmt"
 	"reflect"
 	"strings"

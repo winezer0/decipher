@@ -1,15 +1,15 @@
 package algo
 
 import (
-	"decipher/internal/algo/base64"
-	"decipher/internal/algo/bcrypt"
-	"decipher/internal/algo/des"
-	"decipher/internal/algo/md5"
-	"decipher/internal/algo/mssql"
-	"decipher/internal/algo/mysql"
-	"decipher/internal/algo/ntlm"
-	"decipher/internal/algo/scrypt"
-	"decipher/internal/algo/sha"
+	"github.com/winezer0/decipher/internal/algo/base64"
+	"github.com/winezer0/decipher/internal/algo/bcrypt"
+	"github.com/winezer0/decipher/internal/algo/des"
+	"github.com/winezer0/decipher/internal/algo/md5"
+	"github.com/winezer0/decipher/internal/algo/mssql"
+	"github.com/winezer0/decipher/internal/algo/mysql"
+	"github.com/winezer0/decipher/internal/algo/ntlm"
+	"github.com/winezer0/decipher/internal/algo/scrypt"
+	"github.com/winezer0/decipher/internal/algo/sha"
 )
 
 // GetAllAlgorithms 返回所有支持的算法实例

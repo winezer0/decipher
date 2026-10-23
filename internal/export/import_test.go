@@ -1,7 +1,7 @@
 package export
 
 import (
-	"decipher/internal/cracker"
+	"github.com/winezer0/decipher/internal/cracker"
 	"os"
 	"path/filepath"
 	"testing"

@@ -37,3 +37,11 @@ func InitSaltProviders(inputs []string) []SaltProvider {
 	providers = append(providers, NewMemorySaltProvider([]string{""}, "empty"))
 	return providers
 }
+
+// InitValueSaltProviders creates salt providers from literal in-memory values.
+func InitValueSaltProviders(values []string) []SaltProvider {
+	if len(values) == 0 {
+		return []SaltProvider{NewMemorySaltProvider([]string{""}, "empty")}
+	}
+	return []SaltProvider{NewMemorySaltProvider(append([]string(nil), values...), "SDK values")}
+}

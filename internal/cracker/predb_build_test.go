@@ -1,8 +1,8 @@
 package cracker
 
 import (
-	"decipher/internal/algo"
-	"decipher/internal/algo/md5"
+	"github.com/winezer0/decipher/internal/algo"
+	"github.com/winezer0/decipher/internal/algo/md5"
 	"os"
 	"path/filepath"
 	"strings"

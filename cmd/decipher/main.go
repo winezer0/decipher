@@ -1,9 +1,9 @@
 package main
 
 import (
-	"decipher/internal/cracker"
 	"errors"
 	"fmt"
+	"github.com/winezer0/decipher/internal/cracker"
 	"os"
 
 	utils "github.com/winezer0/xutils/fileutils"
@@ -35,8 +35,8 @@ func runActions(opts *Options) error {
 		name    string
 		run     func(*cracker.Engine, *Options) error
 	}{
-		{"dict add", "dict add", dictAddAction},
-		{"dict init", "dict init", dictInitAction},
+		{"dict-add", "dict-add", dictAddAction},
+		{"predb-init", "predb-init", dictInitAction},
 		{"id", "ident", identAction},
 		{"enc", "encrypt", encryptAction},
 		{"dec", "decrypt", decryptAction},

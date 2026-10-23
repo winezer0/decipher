@@ -1,6 +1,6 @@
 package algo
 
-import "decipher/internal/algo/types"
+import "github.com/winezer0/decipher/internal/algo/types"
 
 // Algorithm 定义了统一的加解密/哈希接口
 type Algorithm interface {

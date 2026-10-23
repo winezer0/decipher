@@ -13,7 +13,7 @@ import (
 )
 
 func TestCLICommandHelpAndQueries(t *testing.T) {
-	for _, args := range [][]string{nil, {"--help"}, {"enc", "--help"}, {"dec", "--help"}, {"id", "--help"}, {"dict", "--help"}, {"dict", "add", "--help"}, {"dict", "init", "--help"}, {"--list"}, {"--version"}} {
+	for _, args := range [][]string{nil, {"--help"}, {"enc", "--help"}, {"dec", "--help"}, {"id", "--help"}, {"dict-add", "--help"}, {"predb-init", "--help"}, {"--list"}, {"--version"}} {
 		dir := t.TempDir()
 		out, code := runCLI(t, dir, args...)
 		if code != 0 || !utf8.ValidString(out) {
@@ -32,7 +32,7 @@ func TestCLIDictionaryOperationsAreSeparate(t *testing.T) {
 	plain := writeFixture(t, dir, "decipher_db/builtin-plain.txt", "original\n")
 	salt := writeFixture(t, dir, "decipher_db/builtin-salt.txt", "salt-original\n")
 	input := writeFixture(t, dir, "words.txt", "123456\n")
-	out, code := runCLI(t, dir, "dict", "add", "-p", "file:"+input, "-s", "str:salt-added", "-R")
+	out, code := runCLI(t, dir, "dict-add", "-p", "file:"+input, "-s", "str:salt-added", "-R")
 	if code != 0 {
 		t.Fatalf("exit %d: %s", code, out)
 	}
@@ -44,14 +44,14 @@ func TestCLIDictionaryOperationsAreSeparate(t *testing.T) {
 	}
 	files, _ := filepath.Glob(filepath.Join(dir, "decipher_db", "*.predb"))
 	if len(files) != 0 {
-		t.Fatalf("dict add generated predb: %v", files)
+		t.Fatalf("dict-add generated predb: %v", files)
 	}
 	beforePlain, _ := os.ReadFile(plain)
 	beforeSalt, _ := os.ReadFile(salt)
 	cache := writeFixture(t, dir, "decipher_db/cache_md5($pass).predb", "existing-marker\n")
 	for _, args := range [][]string{
-		{"dict", "init", "-p", "file:" + input},
-		{"dict", "init"}, // Falls back to the dictionaries populated by dict add.
+		{"predb-init", "-p", "file:" + input},
+		{"predb-init"}, // Falls back to the dictionaries populated by dict-add.
 	} {
 		out, code := runCLI(t, dir, append(args, "-a", "md5($pass)", "-A", "-R")...)
 		if code != 0 {
@@ -61,7 +61,7 @@ func TestCLIDictionaryOperationsAreSeparate(t *testing.T) {
 	for path, want := range map[string]string{plain: string(beforePlain), salt: string(beforeSalt), input: "123456\n"} {
 		data, err := os.ReadFile(path)
 		if err != nil || string(data) != want {
-			t.Fatalf("dict init modified %q: %q, %v", path, data, err)
+			t.Fatalf("predb-init modified %q: %q, %v", path, data, err)
 		}
 	}
 	data, err := os.ReadFile(cache)
@@ -69,11 +69,11 @@ func TestCLIDictionaryOperationsAreSeparate(t *testing.T) {
 		t.Fatalf("predb was not appended: %q, %v", data, err)
 	}
 	// Algorithms not eligible for pre-computation must fail rather than fall back.
-	out, code = runCLI(t, dir, "dict", "init", "-a", "md5($salt.$pass)", "-A", "-R")
+	out, code = runCLI(t, dir, "predb-init", "-a", "md5($salt.$pass)", "-A", "-R")
 	if code != 1 || !strings.Contains(out, "no algorithms selected for pre-computation") {
 		t.Fatalf("exit %d: %s", code, out)
 	}
-	out, code = runCLI(t, dir, "dict", "add")
+	out, code = runCLI(t, dir, "dict-add")
 	if code != 1 || !strings.Contains(out, "requires -p or -s") {
 		t.Fatalf("exit %d: %s", code, out)
 	}

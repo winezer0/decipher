@@ -1,8 +1,8 @@
 package cracker
 
 import (
-	"decipher/internal/algo"
-	"decipher/internal/algo/sha"
+	"github.com/winezer0/decipher/internal/algo"
+	"github.com/winezer0/decipher/internal/algo/sha"
 	"fmt"
 	"reflect"
 	"testing"

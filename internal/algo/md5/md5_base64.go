@@ -2,8 +2,8 @@ package md5
 
 import (
 	"crypto/md5"
-	"decipher/internal/algo/types"
-	"decipher/internal/myutils"
+	"github.com/winezer0/decipher/internal/algo/types"
+	"github.com/winezer0/decipher/internal/myutils"
 	"encoding/base64"
 	"io"
 )

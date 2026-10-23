@@ -77,11 +77,11 @@ func requireMissing(t *testing.T, path string) {
 
 func TestCLIRejectsInvalidArgumentsBeforeSideEffects(t *testing.T) {
 	for _, args := range [][]string{
-		{"typo"}, {"--unknown-option"}, {"dict"}, {"dict", "typo"},
+		{"typo"}, {"--unknown-option"}, {"dict"}, {"dict", "typo"}, {"dict", "add"}, {"dict", "init"},
 		{"enc", "dec"},
 		{"-i", "str:" + testHash}, {"enc", "-i", "str:" + testHash},
-		{"id", "-p", "str:123456"}, {"dict", "add", "-a", "md5"},
-		{"dict", "init", "-O", "json"},
+		{"id", "-p", "str:123456"}, {"dict-add", "-a", "md5"},
+		{"predb-init", "-O", "json"},
 	} {
 		t.Run(strings.Join(args, " "), func(t *testing.T) {
 			dir := t.TempDir()
@@ -113,10 +113,10 @@ func TestCLIMissingExplicitFileNeverFallsBack(t *testing.T) {
 		{"id", "-i", "file:missing.txt"},
 		{"enc", "-p", "file:missing.txt"},
 		{"dec", "-i", "str:" + testHash, "-p", "file:missing.txt"},
-		{"dict", "init", "-p", "file:missing.txt"},
+		{"predb-init", "-p", "file:missing.txt"},
 		{"enc", "-p", "str:123456", "-s", "file:missing.txt"},
-		{"dict", "init", "-p", "file:existing.txt", "-s", "file:missing.txt"},
-		{"dict", "add", "-p", "file:missing.txt"},
+		{"predb-init", "-p", "file:existing.txt", "-s", "file:missing.txt"},
+		{"dict-add", "-p", "file:missing.txt"},
 		{"enc", "-p", "file:."},
 	}
 	for _, args := range cases {
@@ -188,7 +188,7 @@ func TestCLICacheWriteErrorsAreFailures(t *testing.T) {
 }
 
 func TestCLIPredbWriteErrorsAreFailures(t *testing.T) {
-	for _, mode := range []string{"dict", "dec"} {
+	for _, mode := range []string{"predb-init", "dec"} {
 		t.Run(mode, func(t *testing.T) {
 			dir := t.TempDir()
 			blocked := filepath.Join(dir, "decipher_db", "cache_md5($pass).predb")
@@ -196,8 +196,8 @@ func TestCLIPredbWriteErrorsAreFailures(t *testing.T) {
 				t.Fatal(err)
 			}
 			args := []string{"dec", "-i", "str:" + testHash, "-p", "str:123456", "-a", "md5($pass)", "-A"}
-			if mode == "dict" {
-				args = []string{"dict", "init", "-p", "str:123456", "-a", "md5($pass)", "-A"}
+			if mode == "predb-init" {
+				args = []string{"predb-init", "-p", "str:123456", "-a", "md5($pass)", "-A"}
 			}
 			out, code := runCLI(t, dir, args...)
 			if code != 1 || !strings.Contains(out, "open pre-db") || strings.Contains(out, " completed") {
@@ -373,14 +373,14 @@ func TestCLIValidInputs(t *testing.T) {
 		{"enc", "-p", "123456"},
 		{"dec", "-i", "str:" + testHash, "-p", "file:words.txt", "--npc"},
 		{"dec", "-i", "str:" + testHash, "--npc"},
-		{"dict", "init", "-p", "file:words.txt"},
+		{"predb-init", "-p", "file:words.txt"},
 	}
 	for _, args := range cases {
 		t.Run(strings.Join(args, " "), func(t *testing.T) {
 			dir := t.TempDir()
 			writeFixture(t, dir, "words.txt", "123456\n")
 			out, code := runCLI(t, dir, append(args, "-a", "md5($pass)", "-A", "-R")...)
-			if len(args) > 1 && args[0] == "dict" && args[1] == "init" {
+			if len(args) > 0 && args[0] == "predb-init" {
 				data, err := os.ReadFile(filepath.Join(dir, "decipher_db", "cache_md5($pass).predb"))
 				if err != nil {
 					t.Fatal(err)

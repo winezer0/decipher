@@ -3,7 +3,7 @@ package sha
 import (
 	"crypto/sha1"
 	"crypto/sha256"
-	"decipher/internal/algo/types"
+	"github.com/winezer0/decipher/internal/algo/types"
 	"encoding/hex"
 	"fmt"
 	"strings"

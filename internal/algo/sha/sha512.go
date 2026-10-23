@@ -2,9 +2,9 @@ package sha
 
 import (
 	"crypto/sha512"
-	"decipher/internal/algo/types"
-	"decipher/internal/ident"
-	"decipher/internal/myutils"
+	"github.com/winezer0/decipher/internal/algo/types"
+	"github.com/winezer0/decipher/internal/ident"
+	"github.com/winezer0/decipher/internal/myutils"
 	"encoding/hex"
 	"io"
 )

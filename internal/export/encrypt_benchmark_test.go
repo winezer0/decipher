@@ -1,9 +1,9 @@
 package export
 
 import (
-	"decipher/internal/algo"
-	"decipher/internal/algo/md5"
-	"decipher/internal/cracker"
+	"github.com/winezer0/decipher/internal/algo"
+	"github.com/winezer0/decipher/internal/algo/md5"
+	"github.com/winezer0/decipher/internal/cracker"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"

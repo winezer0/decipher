@@ -2,7 +2,7 @@ package cracker
 
 import (
 	"context"
-	"decipher/internal/algo"
+	"github.com/winezer0/decipher/internal/algo"
 	"strings"
 	"sync"
 
@@ -43,20 +43,25 @@ func (e *Engine) RunEncryptResults(plainDicts []string, secretDicts []string, al
 // RunEncryptStream 串行交付并发计算的结果；消费失败后取消任务并等待生产者和计算协程退出。
 // 结果顺序与原收集接口一致，取决于并发任务的完成顺序。算法计算失败仍跳过该任务。
 func (e *Engine) RunEncryptStream(plainDicts []string, secretDicts []string, algos []algo.Algorithm, emit func(EncryptResult) error) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	// 加载文件到列表
 	texts := ReadFilesToStrings(plainDicts, false)
-
-	// 使用 SaltProvider 支持生成器
-	var saltProvider SaltProvider
 	providers := InitSaltProviders(secretDicts)
 	if len(providers) == 0 {
 		logging.Warnf("InitSaltProviders returned empty list, using empty salt")
-		saltProvider = NewMemorySaltProvider([]string{""}, "empty")
-	} else {
-		saltProvider = NewMultiSaltProvider(providers)
+		providers = InitValueSaltProviders(nil)
 	}
+	return e.runEncryptStream(texts, NewMultiSaltProvider(providers), algos, emit)
+}
+
+// RunEncryptValuesStream encrypts in-memory plaintexts and secrets and emits structured results.
+func (e *Engine) RunEncryptValuesStream(plaintexts, secrets []string, algos []algo.Algorithm, emit func(EncryptResult) error) error {
+	texts := append([]string(nil), plaintexts...)
+	return e.runEncryptStream(texts, NewMultiSaltProvider(InitValueSaltProviders(secrets)), algos, emit)
+}
+
+// runEncryptStream runs the shared worker pipeline for an in-memory plaintext list and salt provider.
+func (e *Engine) runEncryptStream(texts []string, saltProvider SaltProvider, algos []algo.Algorithm, emit func(EncryptResult) error) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	logging.Infof("Loaded %d text(s) to encrypt", len(texts))
 	// logging.Infof("Loaded %d salt(s) to use", len(secrets)) // 无法预知总数

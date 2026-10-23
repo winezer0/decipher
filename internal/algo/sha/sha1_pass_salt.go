@@ -2,8 +2,8 @@ package sha
 
 import (
 	"crypto/sha1"
-	"decipher/internal/algo/types"
-	"decipher/internal/ident"
+	"github.com/winezer0/decipher/internal/algo/types"
+	"github.com/winezer0/decipher/internal/ident"
 )
 
 type SHA1PassSaltAlgo struct{}

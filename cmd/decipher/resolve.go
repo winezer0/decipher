@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
-	"decipher/internal/cracker"
+	"github.com/winezer0/decipher/internal/cracker"
 	"errors"
 	"fmt"
 	"os"

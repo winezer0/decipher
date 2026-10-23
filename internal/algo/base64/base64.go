@@ -1,10 +1,10 @@
 package base64
 
 import (
-	"decipher/internal/ident"
+	"github.com/winezer0/decipher/internal/ident"
 	"encoding/base64"
 
-	"decipher/internal/algo/types"
+	"github.com/winezer0/decipher/internal/algo/types"
 )
 
 type Base64Algo struct{}

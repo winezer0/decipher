@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"decipher/internal/algo/types"
+	"github.com/winezer0/decipher/internal/algo/types"
 )
 
 func TestBcryptAlgo_GetAlgoType(t *testing.T) {

@@ -1,7 +1,7 @@
 package algo
 
 import (
-	"decipher/internal/algo/types"
+	"github.com/winezer0/decipher/internal/algo/types"
 	utils "github.com/winezer0/xutils/strutils"
 )
 

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"decipher/internal/algo"
-	"decipher/internal/cracker"
+	"github.com/winezer0/decipher/internal/algo"
+	"github.com/winezer0/decipher/internal/cracker"
 	"errors"
 	"fmt"
 	logging "github.com/winezer0/zaplogs"

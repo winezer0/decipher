@@ -3,11 +3,11 @@ package main
 import (
 	"crypto/md5"
 	"crypto/sha1"
-	"decipher/internal/cracker"
 	"encoding/base64"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"github.com/winezer0/decipher/internal/cracker"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -135,7 +135,7 @@ func TestCLIDictionarySingleInputAndSelfAppend(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			requireCLISuccess(t, dir, "dict", "add", flag, "str:added", "-R")
+			requireCLISuccess(t, dir, "dict-add", flag, "str:added", "-R")
 			after, err := os.ReadFile(untouched)
 			if err != nil || string(before) != string(after) {
 				t.Fatalf("unrequested dictionary changed: %v", err)
@@ -145,7 +145,7 @@ func TestCLIDictionarySingleInputAndSelfAppend(t *testing.T) {
 				t.Fatalf("input not appended: %q, %v", before, err)
 			}
 			// A different spelling of the same path must not append a file to itself.
-			requireCLISuccess(t, dir, "dict", "add", flag, "file:./decipher_db/builtin-"+kind+".txt", "-R")
+			requireCLISuccess(t, dir, "dict-add", flag, "file:./decipher_db/builtin-"+kind+".txt", "-R")
 			after, err = os.ReadFile(target)
 			if err != nil || string(before) != string(after) {
 				t.Fatalf("self append modified dictionary: %v", err)
@@ -158,7 +158,7 @@ func TestCLIDictionarySingleInputAndSelfAppend(t *testing.T) {
 func TestCLIDictionaryAppendWithoutFinalNewline(t *testing.T) {
 	dir := t.TempDir()
 	path := writeFixture(t, dir, "decipher_db/builtin-plain.txt", "original")
-	requireCLISuccess(t, dir, "dict", "add", "-p", "str:next", "-p", "str:last", "-R")
+	requireCLISuccess(t, dir, "dict-add", "-p", "str:next", "-p", "str:last", "-R")
 	data, err := os.ReadFile(path)
 	if err != nil || string(data) != "original\nnext\nlast\n" {
 		t.Fatalf("dictionary entries merged: %q, %v", data, err)
@@ -169,8 +169,8 @@ func TestCLIPredbThenDecryptAndCachedResult(t *testing.T) {
 	dir := t.TempDir()
 	plain := "integration-dictionary-password"
 	hash := fmt.Sprintf("%x", md5.Sum([]byte(plain)))
-	requireCLISuccess(t, dir, "dict", "add", "-p", "str:"+plain, "-R")
-	requireCLISuccess(t, dir, "dict", "init", "-a", "md5($pass)", "-A", "-R")
+	requireCLISuccess(t, dir, "dict-add", "-p", "str:"+plain, "-R")
+	requireCLISuccess(t, dir, "predb-init", "-a", "md5($pass)", "-A", "-R")
 	out := requireCLISuccess(t, dir, "dec", "-i", "str:"+hash, "-p", "str:wrong", "-a", "md5($pass)", "-A", "-O", "json", "-R")
 	if !strings.Contains(out, "Starting predb crack") {
 		t.Fatalf("predb path was not exercised: %s", out)

@@ -1,9 +1,9 @@
 package md5
 
 import (
-	"decipher/internal/algo/types"
-	"decipher/internal/ident"
-	"decipher/internal/myutils"
+	"github.com/winezer0/decipher/internal/algo/types"
+	"github.com/winezer0/decipher/internal/ident"
+	"github.com/winezer0/decipher/internal/myutils"
 )
 
 type MD5MiddleAlgo struct{}

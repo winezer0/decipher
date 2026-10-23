@@ -1,10 +1,10 @@
 package main
 
 import (
-	"decipher/internal/algo"
-	"decipher/internal/cracker"
 	"errors"
 	"fmt"
+	"github.com/winezer0/decipher/internal/algo"
+	"github.com/winezer0/decipher/internal/cracker"
 	"os"
 	"path/filepath"
 	"strings"
@@ -70,10 +70,10 @@ type SeparatorOptions struct {
 }
 
 type AffixOptions struct {
-	SaltPrefix string `long:"sp" value-name:"STRING" description:"Prefix added to salts" default:""`
-	SaltSuffix string `long:"ss" value-name:"STRING" description:"Suffix added to salts" default:""`
-	PassPrefix string `long:"pp" value-name:"STRING" description:"Prefix added to plaintext candidates" default:""`
-	PassSuffix string `long:"ps" value-name:"STRING" description:"Suffix added to plaintext candidates" default:""`
+	SaltPrefix string `long:"sp" value-name:"STRING" description:"Prefix added to salt and key candidates; selects the matching precomputed cache scope" default:""`
+	SaltSuffix string `long:"ss" value-name:"STRING" description:"Suffix added to salt and key candidates; selects the matching precomputed cache scope" default:""`
+	PassPrefix string `long:"pp" value-name:"STRING" description:"Prefix added to plaintext candidates; selects the matching precomputed cache scope" default:""`
+	PassSuffix string `long:"ps" value-name:"STRING" description:"Suffix added to plaintext candidates; selects the matching precomputed cache scope" default:""`
 }
 
 type WorkerOptions struct {
@@ -128,9 +128,9 @@ const AppInputHelp = `Input formats:
   -p - and -s - select built-in dictionaries; they do not mean standard input.
   Pass multiple values with repeated flags or comma-separated items; commas in strings and paths are split.
   dec uses the built-in dictionary by default; enc requires plaintext via -p.
-  Choose one operation per run: enc, dec, id, dict add, or dict init.
-  dict add only appends built-in dictionaries; dict init only builds the precomputed database.
-  dict init reads the corresponding built-in dictionary when -p/-s is omitted.
+  Choose one operation per run: enc, dec, id, dict-add, or predb-init.
+  dict-add only appends built-in dictionaries; predb-init only builds the precomputed database.
+  predb-init reads the corresponding built-in dictionary when -p/-s is omitted.
   --cc/--dc run maintenance operations independently and exit.
   enc/dec/id overwrite same-named result files; failure records are overwritten when new failures exist.
   Success cache, built-in dictionaries, and precomputed databases follow their existing append behavior.
@@ -143,8 +143,8 @@ Examples:
   Compute an MD5 hash:              decipher enc -p str:123456 -a 'md5($pass)' -A
   Crack MD5 with a dictionary:      decipher dec -i file:hashes.txt -p file:words.txt -a 'md5($pass)' -A
   Use the built-in dictionary:      decipher dec -i file:hashes.txt -p -
-  Append to built-in dictionaries:  decipher dict add -p file:words.txt
-  Build the precomputed database:   decipher dict init -a 'md5($pass)' -A
+  Append to built-in dictionaries:  decipher dict-add -p file:words.txt
+  Build the precomputed database:   decipher predb-init -a 'md5($pass)' -A
 `
 
 func InitOptionsArgs(minimumParams int) (*Options, *flags.Parser) {
@@ -250,14 +250,14 @@ func normalizeAndValidateOptions(opts *Options) error {
 		return fmt.Errorf("workers must be >= 0")
 	}
 	if opts.Command == "" && !opts.ClearCache && !opts.DedupPredb && !opts.ListAlgos {
-		return fmt.Errorf("a subcommand is required: enc, dec, id, dict add or dict init")
+		return fmt.Errorf("a subcommand is required: enc, dec, id, dict-add or predb-init")
 	}
 	opts.Hashes = cmdutils.FormatCmdsComma(opts.Hashes)
 	opts.AlgoKeys = cmdutils.FormatCmdsComma(opts.AlgoKeys)
 	opts.UsedPlains = cmdutils.FormatCmdsComma(opts.UsedPlains)
 	opts.UsedSecrets = cmdutils.FormatCmdsComma(opts.UsedSecrets)
-	if opts.Command == "dict add" && len(opts.UsedPlains) == 0 && len(opts.UsedSecrets) == 0 && !opts.ClearCache && !opts.DedupPredb {
-		return fmt.Errorf("dict add requires -p or -s")
+	if opts.Command == "dict-add" && len(opts.UsedPlains) == 0 && len(opts.UsedSecrets) == 0 && !opts.ClearCache && !opts.DedupPredb {
+		return fmt.Errorf("dict-add requires -p or -s")
 	}
 	for _, inputs := range [][]string{opts.Hashes, opts.UsedPlains, opts.UsedSecrets} {
 		for _, input := range inputs {

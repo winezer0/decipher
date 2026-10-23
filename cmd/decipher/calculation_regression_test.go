@@ -2,9 +2,9 @@ package main
 
 import (
 	"crypto/md5"
-	"decipher/internal/cracker"
 	"encoding/csv"
 	"fmt"
+	"github.com/winezer0/decipher/internal/cracker"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -129,6 +129,31 @@ func TestCLIAffixCombinationsRecompute(t *testing.T) {
 	}
 }
 
+func TestCLIPredbAndSuccessCacheAreScopedByAffixes(t *testing.T) {
+	dir := t.TempDir()
+	plain := "password"
+	passPrefix := "pre-"
+	passSuffix := "post"
+	preDbArgs := []string{"predb-init", "-p", "str:" + plain, "-a", "md5($pass)", "-A", "--pp", passPrefix, "--ps", passSuffix, "-R"}
+	requireCLISuccess(t, dir, preDbArgs...)
+
+	dbFiles, err := filepath.Glob(filepath.Join(dir, "decipher_db", "affix-*", "cache_md5($pass).predb"))
+	if err != nil || len(dbFiles) != 1 {
+		t.Fatalf("affix-specific predb files = %v, %v", dbFiles, err)
+	}
+	hash := calculationHash(passPrefix + plain + passSuffix)
+	decArgs := []string{"dec", "-i", hash, "-p", "str:" + plain, "-a", "md5($pass)", "-A", "--pp", passPrefix, "--ps", passSuffix, "-O", "json", "-R"}
+	requireCLISuccess(t, dir, decArgs...)
+	requireCalculationResults(t, dir, calculatedResult(hash, "md5($pass)", plain, ""))
+
+	otherAffixArgs := []string{"dec", "-i", hash, "-p", "str:" + plain, "-a", "md5($pass)", "-A", "--pp", "other-", "-O", "json", "-R"}
+	requireCLISuccess(t, dir, otherAffixArgs...)
+	results := readJSONResults[cracker.CrackerResult](t, dir, "decipher.dec.json")
+	if len(results) != 0 {
+		t.Fatalf("different affix configuration reused cached results: %#v", results)
+	}
+}
+
 func TestCLISuccessCacheAfterLiveCalculation(t *testing.T) {
 	dir := t.TempDir()
 	args := []string{"dec", "-i", testHash, "-a", "md5($pass)", "-A", "--npc", "-O", "json", "-R"}
@@ -153,7 +178,7 @@ func TestCLISuccessCacheAfterLiveCalculation(t *testing.T) {
 
 func TestCLIPredbCanBeSkippedForLiveCalculation(t *testing.T) {
 	dir := t.TempDir()
-	requireCLISuccess(t, dir, "dict", "init", "-p", "str:123456", "-a", "md5($pass)", "-A", "-R")
+	requireCLISuccess(t, dir, "predb-init", "-p", "str:123456", "-a", "md5($pass)", "-A", "-R")
 	args := []string{"dec", "-i", testHash, "-a", "md5($pass)", "-A", "-O", "json", "-R"}
 	requireCLISuccess(t, dir, append(args, "-p", "str:wrong")...)
 	results := readJSONResults[cracker.CrackerResult](t, dir, "decipher.dec.json")

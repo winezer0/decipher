@@ -3,7 +3,7 @@ package sha
 import (
 	"testing"
 
-	"decipher/internal/algo/types"
+	"github.com/winezer0/decipher/internal/algo/types"
 )
 
 func TestSHA1DoubleAlgo_GetAlgoType(t *testing.T) {

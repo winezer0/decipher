@@ -26,20 +26,21 @@ func DeduplicateCache(cacheDir string) error {
 	if !info.IsDir() {
 		return fmt.Errorf("read cache directory %s: not a directory", cacheDir)
 	}
-	entries, err := os.ReadDir(cacheDir)
-	if err != nil {
-		return fmt.Errorf("read cache directory %s: %w", cacheDir, err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), PredbSuffix) {
-			continue
+	err = filepath.WalkDir(cacheDir, func(path string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
 		}
-		path := filepath.Join(cacheDir, entry.Name())
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), PredbSuffix) {
+			return nil
+		}
 		logging.Infof("Deduplicating %s...", entry.Name())
 		if err := utils.DeduplicateFile(path); err != nil {
 			return fmt.Errorf("deduplicate %s: %w", path, err)
 		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("walk cache directory %s: %w", cacheDir, err)
 	}
 	logging.Info("Cache deduplication completed.")
 	return nil

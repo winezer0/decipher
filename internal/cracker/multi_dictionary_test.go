@@ -2,8 +2,8 @@ package cracker
 
 import (
 	"crypto/sha256"
-	"decipher/internal/algo"
-	"decipher/internal/algo/sha"
+	"github.com/winezer0/decipher/internal/algo"
+	"github.com/winezer0/decipher/internal/algo/sha"
 	"fmt"
 	"os"
 	"path/filepath"

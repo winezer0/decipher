@@ -1,8 +1,8 @@
 package algo_test
 
 import (
-	"decipher/internal/algo"
-	"decipher/internal/algo/types"
+	"github.com/winezer0/decipher/internal/algo"
+	"github.com/winezer0/decipher/internal/algo/types"
 	"fmt"
 	"strings"
 	"testing"

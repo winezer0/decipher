@@ -25,12 +25,11 @@ func registerCommands(parser *flags.Parser, opts *Options) map[string]*Options {
 	enc := command(root, "enc", "Hash plaintext or encrypt data")
 	dec := command(root, "dec", "Crack hashes or decrypt ciphertext")
 	id := command(root, "id", "Identify hash algorithms")
-	dict := command(root, "dict", "Manage built-in dictionaries and precomputed databases")
-	add := command(dict, "add", "Append words to built-in dictionaries")
-	init := command(dict, "init", "Build the precomputed database")
+	add := command(root, "dict-add", "Append words to built-in dictionaries")
+	init := command(root, "predb-init", "Build the precomputed database")
 	configs := make(map[*flags.Command]*Options)
 	byName := make(map[string]*Options)
-	for cmd, name := range map[*flags.Command]string{enc: "enc", dec: "dec", id: "id", add: "dict add", init: "dict init"} {
+	for cmd, name := range map[*flags.Command]string{enc: "enc", dec: "dec", id: "id", add: "dict-add", init: "predb-init"} {
 		config := &Options{}
 		config.Output, config.OutputType, config.ConcatSymbol = ".", "csv", ":"
 		configs[cmd], byName[name] = config, config

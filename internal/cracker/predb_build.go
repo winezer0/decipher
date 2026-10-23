@@ -2,9 +2,9 @@ package cracker
 
 import (
 	"bufio"
-	"decipher/internal/algo"
 	"errors"
 	"fmt"
+	"github.com/winezer0/decipher/internal/algo"
 	"os"
 	"path/filepath"
 	"strings"
@@ -37,8 +37,9 @@ func (e *Engine) CreatePredb(plainDicts []string, secretDicts []string, selectAl
 	}
 	logging.Infof("current predb algos (%d) to be used", len(preDBAlgos))
 
-	if err := utils.EnsureDir(e.PredbDir, false); err != nil {
-		return fmt.Errorf("failed to create cache directory %s: %v", e.PredbDir, err)
+	dbDir := e.predbScopeDir()
+	if err := utils.EnsureDir(dbDir, false); err != nil {
+		return fmt.Errorf("failed to create cache directory %s: %v", dbDir, err)
 	}
 
 	// 初始化盐值提供者（支持文件、生成器等）
@@ -52,6 +53,7 @@ func (e *Engine) CreatePredb(plainDicts []string, secretDicts []string, selectAl
 
 // genPredbConcurrency 并发生成缓存条目
 func (e *Engine) genPredbConcurrency(algos []algo.Algorithm, plainFiles []string, saltProvider SaltProvider) error {
+	dbDir := e.predbScopeDir()
 	// 分离算法
 	var saltedAlgos []algo.Algorithm
 	var unsaltedAlgos []algo.Algorithm
@@ -92,7 +94,7 @@ func (e *Engine) genPredbConcurrency(algos []algo.Algorithm, plainFiles []string
 			if _, ok := writers[algoName]; ok {
 				continue
 			}
-			dbPath := filepath.Join(e.PredbDir, fmt.Sprintf(PredbFileFormat, algoName))
+			dbPath := filepath.Join(dbDir, fmt.Sprintf(PredbFileFormat, algoName))
 			dbObj, err := os.OpenFile(dbPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 			if err != nil {
 				writeErr = errors.Join(writeErr, fmt.Errorf("open pre-db %s: %w", dbPath, err))
@@ -110,7 +112,7 @@ func (e *Engine) genPredbConcurrency(algos []algo.Algorithm, plainFiles []string
 			w, ok := writers[res.algo]
 			if !ok {
 				// 理论上不应该走到这里，因为前面已经预打开了
-				fname := filepath.Join(e.PredbDir, fmt.Sprintf(PredbFileFormat, res.algo))
+				fname := filepath.Join(dbDir, fmt.Sprintf(PredbFileFormat, res.algo))
 				f, err := os.OpenFile(fname, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 				if err != nil {
 					writeErr = fmt.Errorf("open pre-db %s: %w", fname, err)

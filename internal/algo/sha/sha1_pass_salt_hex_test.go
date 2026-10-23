@@ -1,7 +1,7 @@
 package sha
 
 import (
-	"decipher/internal/algo/types"
+	"github.com/winezer0/decipher/internal/algo/types"
 	"testing"
 )
 

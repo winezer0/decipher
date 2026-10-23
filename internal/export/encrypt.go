@@ -3,7 +3,7 @@ package export
 import (
 	"bufio"
 	"bytes"
-	"decipher/internal/cracker"
+	"github.com/winezer0/decipher/internal/cracker"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"

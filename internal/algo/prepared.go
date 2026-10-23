@@ -4,9 +4,9 @@ import (
 	"crypto/md5"
 	"crypto/sha1"
 	"crypto/sha256"
-	hashmd5 "decipher/internal/algo/md5"
-	hashsha "decipher/internal/algo/sha"
-	"decipher/internal/algo/types"
+	hashmd5 "github.com/winezer0/decipher/internal/algo/md5"
+	hashsha "github.com/winezer0/decipher/internal/algo/sha"
+	"github.com/winezer0/decipher/internal/algo/types"
 	"encoding/hex"
 )
 

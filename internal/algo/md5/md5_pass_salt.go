@@ -2,8 +2,8 @@ package md5
 
 import (
 	"crypto/md5"
-	"decipher/internal/algo/types"
-	"decipher/internal/ident"
+	"github.com/winezer0/decipher/internal/algo/types"
+	"github.com/winezer0/decipher/internal/ident"
 )
 
 type MD5PassSaltAlgo struct{}

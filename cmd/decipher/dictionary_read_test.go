@@ -2,7 +2,7 @@ package main
 
 import (
 	"crypto/md5"
-	"decipher/internal/cracker"
+	"github.com/winezer0/decipher/internal/cracker"
 	"encoding/json"
 	"fmt"
 	"os"
