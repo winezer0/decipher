@@ -30,7 +30,7 @@ func (p *MultiSaltProvider) Count() int64 {
 }
 
 func (p *MultiSaltProvider) GenerateStream(ctxDone <-chan struct{}) <-chan string {
-	out := make(chan string, 1000)
+	out := make(chan string, saltBufferCapacity(p.providers))
 	go func() {
 		defer close(out)
 		// seen := make(map[string]struct{}) // 移除全局去重以防止 OOM
@@ -43,13 +43,11 @@ func (p *MultiSaltProvider) GenerateStream(ctxDone <-chan struct{}) <-chan strin
 				// 	out <- salt
 				// }
 				// 直接输出，允许重复以换取内存安全
-				select {
-				case <-ctxDone:
+				if !sendSalt(ctxDone, out, salt) {
 					// 释放当前提供者可能已经阻塞的发送及其文件资源。
 					for range ch {
 					}
 					return
-				case out <- salt:
 				}
 			}
 		}

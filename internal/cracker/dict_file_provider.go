@@ -49,7 +49,9 @@ func (p *FileSaltProvider) GenerateStream(ctxDone <-chan struct{}) <-chan string
 			default:
 				salt := strings.TrimSpace(scanner.Text())
 				if salt != "" {
-					out <- salt
+					if !sendSaltAfterCheck(ctxDone, out, salt) {
+						return
+					}
 				}
 			}
 		}

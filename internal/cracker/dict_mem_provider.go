@@ -19,15 +19,12 @@ func (p *MemorySaltProvider) Count() int64 {
 }
 
 func (p *MemorySaltProvider) GenerateStream(ctxDone <-chan struct{}) <-chan string {
-	out := make(chan string, 1000)
+	out := make(chan string, min(len(p.salts), saltBufferSize))
 	go func() {
 		defer close(out)
 		for _, s := range p.salts {
-			select {
-			case <-ctxDone:
+			if !sendSalt(ctxDone, out, s) {
 				return
-			default:
-				out <- s
 			}
 		}
 	}()

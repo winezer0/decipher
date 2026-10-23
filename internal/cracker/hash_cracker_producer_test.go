@@ -20,7 +20,7 @@ func batchTestSalts(count int) []string {
 }
 
 func TestProcessBatchSharesImmutableSaltBatches(t *testing.T) {
-	for _, count := range []int{0, 1, 999, 1000, 1001, 2001} {
+	for _, count := range []int{0, 1, 4, 999, 1000, 1001, 2001, 10000} {
 		t.Run(fmt.Sprint(count), func(t *testing.T) {
 			plains := []string{"first", "second", "third"}
 			salts := batchTestSalts(count)

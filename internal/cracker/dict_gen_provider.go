@@ -91,7 +91,9 @@ func (p *GeneratorSaltProvider) GenerateStream(ctxDone <-chan struct{}) <-chan s
 			}
 
 			if len(current) >= p.minLen {
-				out <- current
+				if !sendSaltAfterCheck(ctxDone, out, current) {
+					return
+				}
 			}
 			if len(current) >= p.maxLen {
 				return

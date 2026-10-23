@@ -108,13 +108,14 @@ func (e *Engine) processBatch(ctx context.Context, taskChan chan<- crackTask, pl
 		multiProvider := NewMultiSaltProvider(saltProviders)
 		saltStream := multiProvider.GenerateStream(ctx.Done())
 
-		saltBatchSize := 1000
+		saltBatchSize := saltBufferSize
+		saltBatchCapacity := saltBufferCapacity(saltProviders)
 		var saltBatch []string
 
 		// 遍历 Salt 流
 		for salt := range saltStream {
 			if saltBatch == nil {
-				saltBatch = make([]string, 0, saltBatchSize)
+				saltBatch = make([]string, 0, saltBatchCapacity)
 			}
 			saltBatch = append(saltBatch, salt)
 
