@@ -117,20 +117,23 @@ func (e *Engine) processBatch(ctx context.Context, taskChan chan<- crackTask, pl
 	if len(plains) == 0 {
 		return
 	}
-	shareAffixes := len(options) > 0 && options[0].shareSaltAffixes
+	var dispatch crackDispatchOptions
+	if len(options) > 0 {
+		dispatch = options[0]
+	}
+	shareAffixes := dispatch.shareSaltAffixes && !dispatch.skipDynamic
+	done := ctx.Done()
 
 	// Phase 1: Fixed Pass
 	// 处理无 Salt 需求或自带 Salt 的情况
 	for _, p := range plains {
-		select {
-		case <-ctx.Done():
+		if !dispatchCrackTask(done, taskChan, crackTask{plainLine: p}, dispatch.skipFixed) {
 			return
-		case taskChan <- crackTask{plainLine: p, salts: nil}:
-			// 更新进度条
-			if bar != nil {
-				// +1 代表换行符或分隔符，保持字节计数一致性
-				bar.Add(len(p) + 1)
-			}
+		}
+		// 更新进度条
+		if bar != nil {
+			// +1 代表换行符或分隔符，保持字节计数一致性
+			bar.Add(len(p) + 1)
 		}
 	}
 
@@ -155,13 +158,11 @@ func (e *Engine) processBatch(ctx context.Context, taskChan chan<- crackTask, pl
 			if len(saltBatch) >= saltBatchSize {
 				affixes := e.prepareSaltAffixes(saltBatch, len(plains), shareAffixes)
 				for _, p := range plains {
-					select {
-					case <-ctx.Done():
+					if !dispatchCrackTask(done, taskChan, crackTask{plainLine: p, salts: saltBatch, affixedSalts: affixes}, dispatch.skipDynamic) {
 						return
-					case taskChan <- crackTask{plainLine: p, salts: saltBatch, affixedSalts: affixes}:
-						if bar != nil {
-							bar.Add(len(p) + 1)
-						}
+					}
+					if bar != nil {
+						bar.Add(len(p) + 1)
 					}
 				}
 				// 已发布的批次由 Workers 共享只读；下一批使用新数组。
@@ -173,16 +174,31 @@ func (e *Engine) processBatch(ctx context.Context, taskChan chan<- crackTask, pl
 		if len(saltBatch) > 0 {
 			affixes := e.prepareSaltAffixes(saltBatch, len(plains), shareAffixes)
 			for _, p := range plains {
-				select {
-				case <-ctx.Done():
+				if !dispatchCrackTask(done, taskChan, crackTask{plainLine: p, salts: saltBatch[:len(saltBatch):len(saltBatch)], affixedSalts: affixes}, dispatch.skipDynamic) {
 					return
-				case taskChan <- crackTask{plainLine: p, salts: saltBatch[:len(saltBatch):len(saltBatch)], affixedSalts: affixes}:
-					if bar != nil {
-						bar.Add(len(p) + 1)
-					}
+				}
+				if bar != nil {
+					bar.Add(len(p) + 1)
 				}
 			}
 		}
+	}
+}
+
+func dispatchCrackTask(done <-chan struct{}, out chan<- crackTask, task crackTask, skip bool) bool {
+	if skip {
+		select {
+		case <-done:
+			return false
+		default:
+			return true
+		}
+	}
+	select {
+	case <-done:
+		return false
+	case out <- task:
+		return true
 	}
 }
 

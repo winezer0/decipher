@@ -107,7 +107,7 @@ type crackTask struct {
 
 type preparedSaltBatch struct{ values []string }
 
-type crackDispatchOptions struct{ shareSaltAffixes bool }
+type crackDispatchOptions struct{ shareSaltAffixes, skipFixed, skipDynamic bool }
 
 func purePreparedAlgorithms(algos []algo.Algorithm) bool {
 	if len(algos) == 0 {
@@ -274,7 +274,7 @@ func (e *Engine) runHashCrackWithDictStream(hashSaltTargets []HashSaltTarget, al
 	}()
 
 	// 生产者：读取明文 -> 读取 Salt 流 -> 生成任务
-	options := crackDispatchOptions{shareSaltAffixes: (e.SaltPrefix != "" || e.SaltSuffix != "") && purePreparedAlgorithms(algos)}
+	options := crackDispatchOptions{shareSaltAffixes: (e.SaltPrefix != "" || e.SaltSuffix != "") && purePreparedAlgorithms(algos), skipFixed: len(strategies.fixed) == 0, skipDynamic: len(strategies.dynamic) == 0}
 	go e.crackProducer(ctx, taskChan, reader, saltProviders, bar, startTime, options)
 
 	for res := range resultChan {
