@@ -1,9 +1,9 @@
 package sha
 
 import (
+	"crypto/sha1"
 	"decipher/internal/algo/types"
 	"decipher/internal/ident"
-	"decipher/internal/myutils"
 )
 
 type SHA1PassSaltAlgo struct{}
@@ -19,8 +19,7 @@ func (a *SHA1PassSaltAlgo) Seal(plaintext, secret string) (string, error) {
 }
 
 func (a *SHA1PassSaltAlgo) Recover(token, secret, candidatePlain string) (string, error) {
-	computed := sha1Hex(candidatePlain + secret)
-	if myutils.EqualString(computed, token, true) {
+	if sha1Matches(token, sha1.Sum([]byte(candidatePlain+secret))) {
 		return candidatePlain, nil
 	}
 	return "", types.ErrVerificationFailed

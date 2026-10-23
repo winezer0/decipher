@@ -20,7 +20,7 @@ func TestCrackWorkerMemoryProcess(t *testing.T) {
 	if name == "" {
 		return
 	}
-	for _, w := range workerWorkloads {
+	for _, w := range append(workerWorkloads[:len(workerWorkloads):len(workerWorkloads)], shaWorkerWorkloads...) {
 		if w.name != name {
 			continue
 		}
@@ -51,11 +51,16 @@ func TestCrackWorkerPeakWorkingSet(t *testing.T) {
 	if !*measureWorkerMemory {
 		t.Skip("run explicitly with -worker-memory")
 	}
+	testWorkerPeakWorkingSet(t, workerWorkloads)
+}
+
+func testWorkerPeakWorkingSet(t *testing.T, workloads []workerWorkload) {
+	t.Helper()
 	executable, err := os.Executable()
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, w := range workerWorkloads {
+	for _, w := range workloads {
 		for sample := 0; sample < 3; sample++ {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			cmd := exec.CommandContext(ctx, executable, "-test.run=^TestCrackWorkerMemoryProcess$")

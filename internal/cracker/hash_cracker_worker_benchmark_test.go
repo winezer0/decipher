@@ -3,6 +3,7 @@ package cracker
 import (
 	"decipher/internal/algo"
 	"decipher/internal/algo/md5"
+	"decipher/internal/algo/sha"
 	"fmt"
 	"strings"
 	"testing"
@@ -10,6 +11,7 @@ import (
 )
 
 type workerWorkload struct {
+	family                   string
 	name, mode, hit          string
 	targets, plains, workers int
 	mixed, affix             bool
@@ -47,6 +49,15 @@ func newWorkerFixture(t testing.TB, w workerWorkload) workerFixture {
 	if w.mixed {
 		f.algorithms = append(f.algorithms, &md5.MD5SaltPassAlgo{}, &md5.MD5PassSaltAlgo{})
 	}
+	switch w.family {
+	case "sha1":
+		f.algorithms = []algo.Algorithm{&sha.SHA1Algo{}, &sha.SHA1SaltPassAlgo{}, &sha.SHA1PassSaltAlgo{}}
+	case "sha256":
+		f.algorithms = []algo.Algorithm{&sha.SHA256Algo{}, &sha.SHA256SaltPassAlgo{}, &sha.SHA256PassSaltAlgo{}}
+	}
+	if !w.mixed {
+		f.algorithms = f.algorithms[:1]
+	}
 	if w.mode != "fixed" {
 		f.salts = []SaltProvider{NewMemorySaltProvider([]string{"s0", "s1", "s2", "s3"}, "worker-benchmark")}
 	}
@@ -57,6 +68,11 @@ func newWorkerFixture(t testing.TB, w workerWorkload) workerFixture {
 	f.input = input.String()
 	for i := 0; i < w.targets; i++ {
 		target := HashSaltTarget{Hash: fmt.Sprintf("%032x", i+1)}
+		if w.family == "sha1" {
+			target.Hash = fmt.Sprintf("%040x", i+1)
+		} else if w.family == "sha256" {
+			target.Hash = fmt.Sprintf("%064x", i+1)
+		}
 		if w.mode == "mixed" && i%2 == 0 {
 			target.Salt = fmt.Sprintf("s%d", i%4)
 		}
