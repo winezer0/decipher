@@ -29,6 +29,31 @@ func TestCrmebAdminAlgo_SealAndRecover(t *testing.T) {
 	}
 }
 
+func TestCrmebAdminAlgo_CanDecryptFormat(t *testing.T) {
+	algorithm := &CrmebAdminAlgo{}
+	valid, err := algorithm.Seal("hello", "secret")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		name  string
+		token string
+		want  bool
+	}{
+		{name: "complete DES blocks", token: valid, want: true},
+		{name: "invalid Base64", token: "not-base64", want: false},
+		{name: "partial DES block", token: "YQ==", want: false},
+		{name: "empty ciphertext", token: "", want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := algorithm.CanDecryptFormat(tt.token); got != tt.want {
+				t.Fatalf("CanDecryptFormat(%q) = %t, want %t", tt.token, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestCrmebAdminAlgo_Recover_UserProvided(t *testing.T) {
 	algo := &CrmebAdminAlgo{}
 	encrypted := "Ls34Pql552iTH1xkO+dy1OWAQx0GdmK5"

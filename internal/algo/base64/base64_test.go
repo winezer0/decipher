@@ -88,3 +88,22 @@ func TestBase64Algo_Recover_Invalid(t *testing.T) {
 		})
 	}
 }
+
+func TestBase64Algo_CanDecryptFormat(t *testing.T) {
+	tests := []struct {
+		name  string
+		token string
+		want  bool
+	}{
+		{name: "valid", token: "aGVsbG8=", want: true},
+		{name: "invalid", token: "not-base64", want: false},
+	}
+	algorithm := &Base64Algo{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := algorithm.CanDecryptFormat(tt.token); got != tt.want {
+				t.Fatalf("CanDecryptFormat(%q) = %t, want %t", tt.token, got, tt.want)
+			}
+		})
+	}
+}

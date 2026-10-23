@@ -2,10 +2,10 @@ package cracker
 
 import (
 	"context"
-	"github.com/winezer0/decipher/internal/algo"
 	"strings"
 	"sync"
 
+	"github.com/winezer0/decipher/internal/algo"
 	logging "github.com/winezer0/zaplogs"
 )
 
@@ -64,12 +64,19 @@ func (e *Engine) runEncryptStream(texts []string, saltProvider SaltProvider, alg
 	defer cancel()
 
 	logging.Infof("Loaded %d text(s) to encrypt", len(texts))
+	hasPassAffixes := e.PassPrefix != "" || e.PassSuffix != ""
+	var preparedText []bool
+	if hasPassAffixes {
+		preparedText = make([]bool, len(texts))
+	}
 	// logging.Infof("Loaded %d salt(s) to use", len(secrets)) // 无法预知总数
 
 	type job struct {
-		text string
-		salt string
-		alg  algo.Algorithm
+		text        string
+		plaintext   string
+		salt        string
+		affixedSalt string
+		algorithm   algo.Algorithm
 	}
 
 	jobs := make(chan job, e.workers*2)
@@ -85,13 +92,13 @@ func (e *Engine) runEncryptStream(texts []string, saltProvider SaltProvider, alg
 				if ctx.Err() != nil {
 					return
 				}
-				hash, err := j.alg.Seal(e.AffixPasswd(j.text), e.AffixSalt(j.salt))
+				hash, err := j.algorithm.Seal(j.plaintext, j.affixedSalt)
 				if err != nil {
 					// 加密失败，跳过此任务
 					continue
 				}
 				select {
-				case resultsChan <- EncryptResult{Algorithm: j.alg.Name(), Hash: hash, Salt: j.salt, Plaintext: j.text}:
+				case resultsChan <- EncryptResult{Algorithm: j.algorithm.Name(), Hash: hash, Salt: j.salt, Plaintext: j.text}:
 				case <-ctx.Done():
 					return
 				}
@@ -123,11 +130,24 @@ func (e *Engine) runEncryptStream(texts []string, saltProvider SaltProvider, alg
 				noSaltAlgos = append(noSaltAlgos, a)
 			}
 		}
+		prepareText := func(index int) (string, string) {
+			if !hasPassAffixes {
+				return texts[index], texts[index]
+			}
+			if !preparedText[index] {
+				texts[index] = e.AffixPasswd(texts[index])
+				preparedText[index] = true
+			}
+			plaintext := texts[index]
+			text := plaintext[len(e.PassPrefix) : len(plaintext)-len(e.PassSuffix)]
+			return text, plaintext
+		}
 
 		// 1. 处理不需要 Salt 的算法
 		for _, alg := range noSaltAlgos {
-			for _, text := range texts {
-				if !send(job{text: text, salt: "", alg: alg}) {
+			for i := range texts {
+				text, plaintext := prepareText(i)
+				if !send(job{text: text, plaintext: plaintext, algorithm: alg}) {
 					return
 				}
 			}
@@ -142,9 +162,11 @@ func (e *Engine) runEncryptStream(texts []string, saltProvider SaltProvider, alg
 				}
 			}()
 			for salt := range saltStream {
+				affixedSalt := e.AffixSalt(salt)
 				for _, alg := range needSaltAlgos {
-					for _, text := range texts {
-						if !send(job{text: text, salt: salt, alg: alg}) {
+					for i := range texts {
+						text, plaintext := prepareText(i)
+						if !send(job{text: text, plaintext: plaintext, salt: salt, affixedSalt: affixedSalt, algorithm: alg}) {
 							return
 						}
 					}
