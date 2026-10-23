@@ -44,7 +44,7 @@ func plaintextScannerBufferSize(reader io.Reader) int {
 
 // crackProducer reads plaintexts from the reader and dispatches tasks to workers.
 // It handles the combination of plaintexts and salts (Fixed Pass & Dynamic Pass).
-func (e *Engine) crackProducer(ctx context.Context, taskChan chan<- crackTask, reader io.Reader, saltProviders []SaltProvider, bar *progressbar.ProgressBar, startTime time.Time) {
+func (e *Engine) crackProducer(ctx context.Context, taskChan chan<- crackTask, reader io.Reader, saltProviders []SaltProvider, bar *progressbar.ProgressBar, startTime time.Time, options ...crackDispatchOptions) {
 	defer close(taskChan)
 	if bar != nil {
 		defer bar.Finish()
@@ -83,7 +83,7 @@ func (e *Engine) crackProducer(ctx context.Context, taskChan chan<- crackTask, r
 		count++
 
 		if len(plainBatch) >= plainBatchSize {
-			e.processBatch(ctx, taskChan, plainBatch, saltProviders, bar)
+			e.processBatch(ctx, taskChan, plainBatch, saltProviders, bar, options...)
 			plainBatch = plainBatch[:0] // Clear slice, keep capacity
 			logging.Infof("Processed %d lines... (%v)", count, time.Since(startTime))
 		}
@@ -91,7 +91,7 @@ func (e *Engine) crackProducer(ctx context.Context, taskChan chan<- crackTask, r
 
 	// Process remaining plaintexts
 	if len(plainBatch) > 0 {
-		e.processBatch(ctx, taskChan, plainBatch, saltProviders, bar)
+		e.processBatch(ctx, taskChan, plainBatch, saltProviders, bar, options...)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -113,10 +113,11 @@ func (e *Engine) crackProducer(ctx context.Context, taskChan chan<- crackTask, r
 //   - 操作: 如果存在 SaltProviders，则遍历生成的 Salt 流。
 //   - 优化: 采用 SaltBatch (1000) 批量分发，即 "1个明文 + 1000个Salt" 打包成一个任务 (实际上是 Task{p, salts})。
 //   - 进度: 同样在分发任务后更新进度条。
-func (e *Engine) processBatch(ctx context.Context, taskChan chan<- crackTask, plains []string, saltProviders []SaltProvider, bar *progressbar.ProgressBar) {
+func (e *Engine) processBatch(ctx context.Context, taskChan chan<- crackTask, plains []string, saltProviders []SaltProvider, bar *progressbar.ProgressBar, options ...crackDispatchOptions) {
 	if len(plains) == 0 {
 		return
 	}
+	shareAffixes := len(options) > 0 && options[0].shareSaltAffixes
 
 	// Phase 1: Fixed Pass
 	// 处理无 Salt 需求或自带 Salt 的情况
@@ -152,11 +153,12 @@ func (e *Engine) processBatch(ctx context.Context, taskChan chan<- crackTask, pl
 
 			// 当积攒了一批 Salt 后，与当前批次的明文进行组合
 			if len(saltBatch) >= saltBatchSize {
+				affixes := e.prepareSaltAffixes(saltBatch, len(plains), shareAffixes)
 				for _, p := range plains {
 					select {
 					case <-ctx.Done():
 						return
-					case taskChan <- crackTask{plainLine: p, salts: saltBatch}:
+					case taskChan <- crackTask{plainLine: p, salts: saltBatch, affixedSalts: affixes}:
 						if bar != nil {
 							bar.Add(len(p) + 1)
 						}
@@ -169,11 +171,12 @@ func (e *Engine) processBatch(ctx context.Context, taskChan chan<- crackTask, pl
 
 		// 处理剩余的 Salt
 		if len(saltBatch) > 0 {
+			affixes := e.prepareSaltAffixes(saltBatch, len(plains), shareAffixes)
 			for _, p := range plains {
 				select {
 				case <-ctx.Done():
 					return
-				case taskChan <- crackTask{plainLine: p, salts: saltBatch[:len(saltBatch):len(saltBatch)]}:
+				case taskChan <- crackTask{plainLine: p, salts: saltBatch[:len(saltBatch):len(saltBatch)], affixedSalts: affixes}:
 					if bar != nil {
 						bar.Add(len(p) + 1)
 					}
@@ -181,4 +184,26 @@ func (e *Engine) processBatch(ctx context.Context, taskChan chan<- crackTask, pl
 			}
 		}
 	}
+}
+
+func (e *Engine) prepareSaltAffixes(salts []string, plains int, enabled bool) *preparedSaltBatch {
+	if !enabled || plains < 16 || (e.SaltPrefix == "" && e.SaltSuffix == "") {
+		return nil
+	}
+	// Very sparse/empty salts may concatenate without allocating. Retain the
+	// worker's reusable scratch path there instead of allocating a batch array.
+	nonempty := 0
+	for _, salt := range salts {
+		if salt != "" {
+			nonempty++
+		}
+	}
+	if nonempty < (len(salts)+3)/4 {
+		return nil
+	}
+	batch := &preparedSaltBatch{values: make([]string, len(salts))}
+	for i, salt := range salts {
+		batch.values[i] = e.AffixSalt(salt)
+	}
+	return batch
 }

@@ -100,8 +100,26 @@ func (e *Engine) RunHashCrack(targets []HashSaltTarget, plainFiles []string, sec
 
 // 任务单元：明文块 + Salt 块
 type crackTask struct {
-	plainLine string
-	salts     []string // 同一盐批次可由多个任务共享，发布后禁止修改。
+	plainLine    string
+	salts        []string // 同一盐批次可由多个任务共享，发布后禁止修改。
+	affixedSalts *preparedSaltBatch
+}
+
+type preparedSaltBatch struct{ values []string }
+
+type crackDispatchOptions struct{ shareSaltAffixes bool }
+
+func purePreparedAlgorithms(algos []algo.Algorithm) bool {
+	if len(algos) == 0 {
+		return false
+	}
+	for _, a := range algos {
+		recover, _ := algo.PrepareRecover(a)
+		if recover == nil {
+			return false
+		}
+	}
+	return true
 }
 
 // crackStrategy 保存原始目标和按用户顺序筛选的算法，发布后只读。
@@ -256,7 +274,8 @@ func (e *Engine) runHashCrackWithDictStream(hashSaltTargets []HashSaltTarget, al
 	}()
 
 	// 生产者：读取明文 -> 读取 Salt 流 -> 生成任务
-	go e.crackProducer(ctx, taskChan, reader, saltProviders, bar, startTime)
+	options := crackDispatchOptions{shareSaltAffixes: (e.SaltPrefix != "" || e.SaltSuffix != "") && purePreparedAlgorithms(algos)}
+	go e.crackProducer(ctx, taskChan, reader, saltProviders, bar, startTime, options)
 
 	for res := range resultChan {
 		mu.Lock()

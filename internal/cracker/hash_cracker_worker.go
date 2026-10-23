@@ -51,7 +51,9 @@ func (e *Engine) crackWorker(ctx context.Context, taskChan <-chan crackTask, res
 			continue
 		}
 		secrets := task.salts
-		if !fixedPass && (e.SaltPrefix != "" || e.SaltSuffix != "") {
+		if !fixedPass && task.affixedSalts != nil {
+			secrets = task.affixedSalts.values
+		} else if !fixedPass && (e.SaltPrefix != "" || e.SaltSuffix != "") {
 			// 仅复用当前任务的盐字符串切片，不缓存候选计算结果或跨任务盐内容。
 			if cap(affixedSalts) < len(task.salts) {
 				affixedSalts = make([]string, len(task.salts))
