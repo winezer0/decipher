@@ -1,0 +1,124 @@
+package cracker
+
+import (
+	"context"
+	"crypto/md5"
+	"crypto/sha1"
+	"crypto/sha256"
+	"decipher/internal/algo"
+	md5algo "decipher/internal/algo/md5"
+	"decipher/internal/algo/sha"
+	"fmt"
+	"reflect"
+	"strings"
+	"testing"
+	"time"
+)
+
+func groupedPlainResults(e *Engine, strategies crackStrategies, count int) []CrackerResult {
+	jobs := make(chan crackTask, 3)
+	for _, plain := range []string{"first", "second", strings.Repeat("x", 70000)} {
+		jobs <- crackTask{plainLine: plain}
+	}
+	close(jobs)
+	out := make(chan CrackerResult, 3*count)
+	e.crackWorker(context.Background(), jobs, out, strategies)
+	close(out)
+	var results []CrackerResult
+	for result := range out {
+		results = append(results, result)
+	}
+	return results
+}
+
+func TestGroupedPlainMatchesPerTargetVerification(t *testing.T) {
+	for _, family := range []string{"md5", "sha1", "sha256"} {
+		for _, count := range []int{1, 15, 16, 100, 1000} {
+			t.Run(fmt.Sprintf("%s/%d", family, count), func(t *testing.T) {
+				var algorithm algo.Algorithm = &md5algo.MD5Algo{}
+				if family == "sha1" {
+					algorithm = &sha.SHA1Algo{}
+				} else if family == "sha256" {
+					algorithm = &sha.SHA256Algo{}
+				}
+				e := &Engine{PassPrefix: "pre-", PassSuffix: "-post", SaltPrefix: "ignored:"}
+				targets := make([]HashSaltTarget, count)
+				for i := range targets {
+					plain := []string{"first", "second", strings.Repeat("x", 70000), "miss"}[i%4]
+					input := []byte("pre-" + plain + "-post")
+					var hash string
+					switch family {
+					case "md5":
+						hash = fmt.Sprintf("%x", md5.Sum(input))
+					case "sha1":
+						hash = fmt.Sprintf("%x", sha1.Sum(input))
+					case "sha256":
+						hash = fmt.Sprintf("%x", sha256.Sum256(input))
+					}
+					if i%2 == 0 {
+						hash = strings.ToUpper(hash)
+					}
+					targets[i] = HashSaltTarget{Hash: hash, Salt: fmt.Sprintf("metadata%d", i%3)}
+				}
+				targets = append(targets, HashSaltTarget{Hash: "invalid"})
+				strategies := e.prepareCrackStrategies(targets, []algo.Algorithm{algorithm})
+				got := groupedPlainResults(e, strategies, len(targets))
+				strategies.fixedPlainDigest = nil
+				want := groupedPlainResults(e, strategies, len(targets))
+				if !reflect.DeepEqual(got, want) || len(got) == 0 {
+					t.Fatalf("results differ: got %d want %d", len(got), len(want))
+				}
+			})
+		}
+	}
+}
+
+func TestGroupedPlainKeepsCustomRecover(t *testing.T) {
+	calls := 0
+	a := &workerProbeAlgo{label: "custom", recover: func(_, _, plain string) (string, error) { calls++; return "custom:" + plain, nil }}
+	targets := make([]HashSaltTarget, 32)
+	for i := range targets {
+		targets[i].Hash = fmt.Sprintf("%032x", i)
+	}
+	e := &Engine{}
+	strategies := e.prepareCrackStrategies(targets, []algo.Algorithm{a})
+	got := groupedPlainResults(e, strategies, len(targets))
+	if calls != 96 || len(got) != 96 {
+		t.Fatal("custom Recover bypassed")
+	}
+	for _, r := range got {
+		if !strings.HasPrefix(r.Plaintext, "custom:") {
+			t.Fatal("custom result changed")
+		}
+	}
+}
+
+func TestGroupedPlainCancelsBlockedResult(t *testing.T) {
+	targets := make([]HashSaltTarget, 16)
+	for i := range targets {
+		targets[i].Hash = fmt.Sprintf("%x", sha256.Sum256([]byte("first")))
+	}
+	e := &Engine{}
+	strategies := e.prepareCrackStrategies(targets, []algo.Algorithm{&sha.SHA256Algo{}})
+	compute := strategies.fixedPlainDigest
+	computed := make(chan struct{})
+	strategies.fixedPlainDigest = func(plain string) algo.PreparedDigest { sum := compute(plain); close(computed); return sum }
+	jobs := make(chan crackTask, 1)
+	jobs <- crackTask{plainLine: "first"}
+	close(jobs)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan struct{})
+	go func() { defer close(done); e.crackWorker(ctx, jobs, make(chan CrackerResult), strategies) }()
+	select {
+	case <-computed:
+	case <-time.After(5 * time.Second):
+		t.Fatal("candidate not computed")
+	}
+	cancel()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("blocked result did not cancel")
+	}
+}

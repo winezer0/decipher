@@ -119,8 +119,9 @@ type crackAlgorithm struct {
 }
 
 type crackStrategies struct {
-	fixed   []crackStrategy
-	dynamic []crackStrategy
+	fixed            []crackStrategy
+	dynamic          []crackStrategy
+	fixedPlainDigest func(string) algo.PreparedDigest
 }
 
 func (e *Engine) prepareCrackStrategies(targets []HashSaltTarget, algos []algo.Algorithm) crackStrategies {
@@ -205,6 +206,19 @@ func (e *Engine) prepareCrackStrategies(targets []HashSaltTarget, algos []algo.A
 				strategies.dynamic = make([]crackStrategy, 0, len(targets))
 			}
 			strategies.dynamic = append(strategies.dynamic, crackStrategy{target: target, validAlgos: dynamic, prepared: prepared})
+		}
+	}
+	if len(strategies.fixed) >= 16 {
+		first := strategies.fixed[0].validAlgos
+		if len(first) == 1 {
+			compute := algo.PreparePlainDigest(first[0].Algorithm)
+			for _, strategy := range strategies.fixed {
+				if len(strategy.validAlgos) != 1 || strategy.validAlgos[0] != first[0] {
+					compute = nil
+					break
+				}
+			}
+			strategies.fixedPlainDigest = compute
 		}
 	}
 	return strategies

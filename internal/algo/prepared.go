@@ -36,6 +36,39 @@ func (target PreparedDigest) Valid() bool { return target.size != 0 }
 // PreparedRecover 不携带候选或可变计算状态。
 type PreparedRecover func(target *PreparedDigest, secret, candidatePlain string) (string, error)
 
+// PreparePlainDigest only recognizes concrete, salt-independent implementations.
+// The returned function computes a single candidate for immediate comparison;
+// it retains no candidate values or runtime cache.
+func PreparePlainDigest(a Algorithm) func(string) PreparedDigest {
+	switch a.(type) {
+	case *hashmd5.MD5Algo:
+		return plainMD5Digest
+	case *hashsha.SHA1Algo:
+		return plainSHA1Digest
+	case *hashsha.SHA256Algo:
+		return plainSHA256Digest
+	}
+	return nil
+}
+
+func plainMD5Digest(plain string) PreparedDigest {
+	sum := md5.Sum([]byte(plain))
+	target := PreparedDigest{size: md5.Size}
+	copy(target.sum[:], sum[:])
+	return target
+}
+
+func plainSHA1Digest(plain string) PreparedDigest {
+	sum := sha1.Sum([]byte(plain))
+	target := PreparedDigest{size: sha1.Size}
+	copy(target.sum[:], sum[:])
+	return target
+}
+
+func plainSHA256Digest(plain string) PreparedDigest {
+	return PreparedDigest{sum: sha256.Sum256([]byte(plain)), size: sha256.Size}
+}
+
 // PrepareRecover 返回验证函数及其十六进制目标长度，只匹配具体实现。
 // 包装及嵌入类型返回 nil、0，继续调用自身 Identify 和 Recover。
 func PrepareRecover(a Algorithm) (PreparedRecover, int) {

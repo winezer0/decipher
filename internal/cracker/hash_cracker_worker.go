@@ -29,6 +29,27 @@ func (e *Engine) crackWorker(ctx context.Context, taskChan <-chan crackTask, res
 			continue
 		}
 		plain := e.AffixPasswd(task.plainLine)
+		if fixedPass && strategies.fixedPlainDigest != nil {
+			candidate := strategies.fixedPlainDigest(plain)
+			for _, strategy := range selected {
+				select {
+				case <-done:
+					return
+				default:
+				}
+				if *strategy.prepared != candidate {
+					continue
+				}
+				alg := strategy.validAlgos[0]
+				result := CrackerResult{Hash: strategy.target.Hash, Salt: strategy.target.Salt, Plaintext: plain, Algorithm: alg.Name(), AlgoType: string(alg.GetAlgoType())}
+				select {
+				case <-done:
+					return
+				case resultChan <- result:
+				}
+			}
+			continue
+		}
 		secrets := task.salts
 		if !fixedPass && (e.SaltPrefix != "" || e.SaltSuffix != "") {
 			// 仅复用当前任务的盐字符串切片，不缓存候选计算结果或跨任务盐内容。
