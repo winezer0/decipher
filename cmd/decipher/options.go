@@ -17,8 +17,8 @@ import (
 
 const (
 	AppName      = "decipher"
-	AppVersion   = "0.1.2"
-	BuildDate    = "2026-04-27"
+	AppVersion   = "0.2.0"
+	BuildDate    = "2026-10-23"
 	AppShortDesc = "Fast hash recovery tool"
 	AppLongDesc  = "Identify hashes, compute hashes and ciphertexts, crack with dictionaries, and manage precomputed databases."
 )
