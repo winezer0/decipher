@@ -1,10 +1,10 @@
 package cracker
 
 import (
-	"github.com/winezer0/decipher/internal/algo"
 	"sync"
 	"time"
 
+	"github.com/winezer0/decipher/internal/algo"
 	logging "github.com/winezer0/zaplogs"
 )
 
@@ -43,14 +43,17 @@ func (e *Engine) runDecryptWithProviders(targets []HashSaltTarget, saltProviders
 	// Calculate total count if possible (optional)
 
 	startTime := time.Now()
-	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	// 创建任务通道
 	type job struct {
-		target HashSaltTarget
-		secret string
-		alg    algo.Algorithm
+		target        HashSaltTarget
+		secret        string
+		affixedSecret string
+		algorithm     algo.Algorithm
+	}
+	type targetAlgorithm struct {
+		target    HashSaltTarget
+		algorithm algo.Algorithm
 	}
 
 	jobs := make(chan job, workers*2)
@@ -62,13 +65,12 @@ func (e *Engine) runDecryptWithProviders(targets []HashSaltTarget, saltProviders
 		go func() {
 			defer wg.Done()
 			for j := range jobs {
-				// 对于加密算法，调用 Recover 进行解密
-				plaintext, err := j.alg.Recover(j.target.Hash, e.AffixSalt(j.secret), "")
+				plaintext, err := j.algorithm.Recover(j.target.Hash, j.affixedSecret, "")
 				if err == nil && plaintext != "" {
 					result := CrackerResult{
 						Hash:      j.target.Hash,
-						Algorithm: j.alg.Name(),
-						AlgoType:  string(j.alg.GetAlgoType()),
+						Algorithm: j.algorithm.Name(),
+						AlgoType:  string(j.algorithm.GetAlgoType()),
 						Plaintext: plaintext,
 						Salt:      j.secret,
 					}
@@ -84,35 +86,41 @@ func (e *Engine) runDecryptWithProviders(targets []HashSaltTarget, saltProviders
 		close(resultsChan)
 	}()
 
-	// 生产任务
 	go func() {
 		defer close(jobs)
+		var saltedTargets []targetAlgorithm
 		for _, target := range targets {
 			for _, alg := range decryptAlogs {
-				// Reversible ciphertexts may not satisfy an algorithm's hash-identification heuristic.
-				if !alg.NeedSalt() {
-					jobs <- job{target: target, secret: "", alg: alg}
+				if matcher, ok := alg.(algo.DecryptFormatMatcher); ok && !matcher.CanDecryptFormat(target.Hash) {
 					continue
 				}
-
-				// For salted algos, iterate providers
-				for _, provider := range saltProviders {
-					stop := make(chan struct{})
-					stream := provider.GenerateStream(stop)
-					for secret := range stream {
-						jobs <- job{target: target, secret: secret, alg: alg}
+				if alg.NeedSalt() {
+					saltedTargets = append(saltedTargets, targetAlgorithm{target: target, algorithm: alg})
+					continue
+				}
+				jobs <- job{target: target, algorithm: alg}
+			}
+		}
+		for _, provider := range saltProviders {
+			stop := make(chan struct{})
+			stream := provider.GenerateStream(stop)
+			for secret := range stream {
+				affixedSecret := e.AffixSalt(secret)
+				for _, candidate := range saltedTargets {
+					jobs <- job{
+						target:        candidate.target,
+						secret:        secret,
+						affixedSecret: affixedSecret,
+						algorithm:     candidate.algorithm,
 					}
-					// Note: stop is not closed because we consume full stream
 				}
 			}
+			close(stop)
 		}
 	}()
 
-	// 收集结果
 	for res := range resultsChan {
-		mu.Lock()
 		allResults = append(allResults, res)
-		mu.Unlock()
 		logging.Infof("[+] Decrypt crack success! Hash: %s", res.Hash)
 		logging.Infof("    Algorithm: %s", res.Algorithm)
 		logging.Infof("    Plaintext: %s", res.Plaintext)

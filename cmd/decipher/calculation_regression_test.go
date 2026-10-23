@@ -154,6 +154,29 @@ func TestCLIPredbAndSuccessCacheAreScopedByAffixes(t *testing.T) {
 	}
 }
 
+func TestCLIAffixedDecryptBuildsScopedPredbWhenOnlyUnprefixedPredbExists(t *testing.T) {
+	dir := t.TempDir()
+	plain := "password"
+	passPrefix := "pre-"
+	passSuffix := "post"
+
+	requireCLISuccess(t, dir, "predb-init", "-p", "str:"+plain, "-a", "md5($pass)", "-A", "-R")
+	basePredb := filepath.Join(dir, "decipher_db", "cache_md5($pass).predb")
+	if _, err := os.Stat(basePredb); err != nil {
+		t.Fatalf("unprefixed predb missing: %v", err)
+	}
+
+	hash := calculationHash(passPrefix + plain + passSuffix)
+	args := []string{"dec", "-i", hash, "-p", "str:" + plain, "-a", "md5($pass)", "-A", "--pp", passPrefix, "--ps", passSuffix, "-O", "json", "-R"}
+	requireCLISuccess(t, dir, args...)
+	requireCalculationResults(t, dir, calculatedResult(hash, "md5($pass)", plain, ""))
+
+	affixedPredbs, err := filepath.Glob(filepath.Join(dir, "decipher_db", "affix-*", "cache_md5($pass).predb"))
+	if err != nil || len(affixedPredbs) != 1 {
+		t.Fatalf("affix-scoped predb files = %v, %v", affixedPredbs, err)
+	}
+}
+
 func TestCLISuccessCacheAfterLiveCalculation(t *testing.T) {
 	dir := t.TempDir()
 	args := []string{"dec", "-i", testHash, "-a", "md5($pass)", "-A", "--npc", "-O", "json", "-R"}

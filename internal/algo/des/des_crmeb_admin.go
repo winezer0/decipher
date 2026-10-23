@@ -2,9 +2,9 @@ package des
 
 import (
 	"crypto/des"
+	"encoding/base64"
 	"github.com/winezer0/decipher/internal/algo/types"
 	"github.com/winezer0/decipher/internal/ident"
-	"encoding/base64"
 )
 
 type CrmebAdminAlgo struct{}
@@ -117,4 +117,10 @@ func Decrypt(encryptedBase64, secret string) (string, error) {
 
 func (a *CrmebAdminAlgo) Identify(token string) bool {
 	return ident.IsValidBase64Str(token)
+}
+
+// CanDecryptFormat reports whether token decodes to complete DES blocks.
+func (a *CrmebAdminAlgo) CanDecryptFormat(token string) bool {
+	encrypted, err := base64.StdEncoding.DecodeString(token)
+	return err == nil && len(encrypted) > 0 && len(encrypted)%des.BlockSize == 0
 }

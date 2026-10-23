@@ -3,11 +3,12 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/winezer0/decipher/internal/algo"
-	"github.com/winezer0/decipher/internal/cracker"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/winezer0/decipher/internal/algo"
+	"github.com/winezer0/decipher/internal/cracker"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/winezer0/xutils/cmdutils"
@@ -17,8 +18,8 @@ import (
 
 const (
 	AppName      = "decipher"
-	AppVersion   = "0.2.0"
-	BuildDate    = "2026-10-23"
+	AppVersion   = "0.3.0"
+	BuildDate    = "2026-10-25"
 	AppShortDesc = "Fast hash recovery tool"
 	AppLongDesc  = "Identify hashes, compute hashes and ciphertexts, crack with dictionaries, and manage precomputed databases."
 )

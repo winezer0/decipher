@@ -54,3 +54,8 @@ type Algorithm interface {
 	// 返回 false: 密文不是本算法
 	Identify(token string) bool
 }
+
+// DecryptFormatMatcher reports whether a token can have the format accepted by a reversible algorithm.
+type DecryptFormatMatcher interface {
+	CanDecryptFormat(token string) bool
+}

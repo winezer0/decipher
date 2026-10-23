@@ -1,14 +1,50 @@
 package cracker
 
 import (
-	"github.com/winezer0/decipher/internal/algo"
-	"github.com/winezer0/decipher/internal/algo/md5"
 	"errors"
 	"reflect"
 	"sort"
 	"testing"
 	"time"
+
+	"github.com/winezer0/decipher/internal/algo"
+	"github.com/winezer0/decipher/internal/algo/des"
+	"github.com/winezer0/decipher/internal/algo/md5"
 )
+
+func TestRunEncryptValuesStreamAppliesAffixes(t *testing.T) {
+	algorithm := &des.CrmebAdminAlgo{}
+	const plaintext = "plain text"
+	const secret = "candidate-key"
+	plaintexts := []string{plaintext}
+	secrets := []string{secret}
+	engine := &Engine{
+		workers:    2,
+		PassPrefix: "plain-before-",
+		PassSuffix: "-plain-after",
+		SaltPrefix: "salt-before-",
+		SaltSuffix: "-salt-after",
+	}
+	var got []EncryptResult
+	err := engine.RunEncryptValuesStream(plaintexts, secrets, []algo.Algorithm{algorithm}, func(result EncryptResult) error {
+		got = append(got, result)
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantHash, err := algorithm.Seal(engine.AffixPasswd(plaintext), engine.AffixSalt(secret))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []EncryptResult{{Algorithm: algorithm.Name(), Hash: wantHash, Salt: secret, Plaintext: plaintext}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("RunEncryptValuesStream() = %#v, want %#v", got, want)
+	}
+	if plaintexts[0] != plaintext || secrets[0] != secret {
+		t.Fatalf("input slices were modified: plaintexts=%v secrets=%v", plaintexts, secrets)
+	}
+}
 
 func TestEncryptStreamMatchesCollectedResults(t *testing.T) {
 	plains := []string{mustWriteTempFileLines(t, []string{"文本,\"", "second"})}

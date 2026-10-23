@@ -1,8 +1,8 @@
 package base64
 
 import (
-	"github.com/winezer0/decipher/internal/ident"
 	"encoding/base64"
+	"github.com/winezer0/decipher/internal/ident"
 
 	"github.com/winezer0/decipher/internal/algo/types"
 )
@@ -38,6 +38,12 @@ func (a *Base64Algo) Recover(token, secret, candidatePlain string) (string, erro
 	}
 
 	return string(decoded), nil
+}
+
+// CanDecryptFormat reports whether token is valid standard Base64.
+func (a *Base64Algo) CanDecryptFormat(token string) bool {
+	_, err := base64.StdEncoding.DecodeString(token)
+	return err == nil
 }
 
 func (a *Base64Algo) Identify(token string) bool {
