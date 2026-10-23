@@ -256,6 +256,79 @@ decipher 的核心原理是**预计算缓存碰撞 + 实时hash计算 + 可逆�
 - `-a, --algos`: 指定使用的哈希算法关键字（例如 `md5`, `sha1`, `bcrypt`）。支持部分匹配，会自动匹配包含指定关键字的所有算法。如果不指定，默认使用所有可用算法。
 - `-A, --precise`: 按算法完整名称精确匹配，与 `-a` 配合使用，例如 `-a 'md5($pass)' -A`。
 - `-L, --list`: 列出当前支持的所有哈希算法。
+当前 `-L` 输出包含以下 66 项：
+- `-L, --list`: 列出当前支持的所有哈希算法。
+
+当前 `-L` 输出包含以下 66 项：
+
+```text
+  1:  base64($pass)
+  2:  des_crmeb_admin
+  3:  md5($pass)
+  4:  md5($pass)[8,24]
+  5:  md5(md5($pass))
+  6:  md5(md5($pass).NiuCloud)
+  7:  md5(md5(md5($pass)))
+  8:  md5(unicode($pass))
+  9:  base64(md5($pass))
+  10:  md5($pass.$salt)
+  11:  md5($salt.$pass)
+  12:  md5($salt.$pass.$salt)
+  13:  md5($salt.md5($pass))
+  14:  md5(md5($salt).$pass)
+  15:  md5($pass.md5($salt))
+  16:  md5(md5($pass).$salt)
+  17:  md5(md5($salt).md5($pass))
+  18:  md5(md5($pass).md5($salt))
+  19:  md5(sha1($pass))
+  20:  md5(md5($pass)[8,24])
+  21:  md5_custom_likeshop_2020
+  22:  md5_custom_likeshop_2021
+  23:  md5_custom_by_pwd
+  24:  md5_custom_nc65
+  25:  md5_custom_gmshop
+  26:  md5($salt;$pass)
+  27:  md5_md5_md5_bt_admin
+  28:  md5($pass.$salt)_hex
+  29:  md5($salt.$pass)_hex
+  30:  md5($salt.$pass.$salt)_hex
+  31:  md5($salt.md5($pass))_hex
+  32:  md5(md5($salt).$pass)_hex
+  33:  md5($pass.md5($salt))_hex
+  34:  md5(md5($pass).$salt);VB;DZ_hex
+  35:  md5(md5($salt).md5($pass))_hex
+  36:  md5(md5($pass).md5($salt))_hex
+  37:  sha1($pass)
+  38:  sha1($pass.$salt)
+  39:  sha1($pass-$salt)
+  40:  sha1($salt.$pass)
+  41:  sha1(sha1($pass))
+  42:  sha1(md5($pass))
+  43:  sha256($pass)
+  44:  sha256($pass.$salt)
+  45:  sha256($salt.$pass)
+  46:  sha256(md5($pass))
+  47:  sha256($pass.$salt);shiro
+  48:  sha256_custom_nccloud
+  49:  sha384($pass)
+  50:  sha512($pass)
+  51:  sha512($pass.$salt)
+  52:  sha512($salt.$pass)
+  53:  sha1($pass.$salt)_hex
+  54:  sha1($salt.$pass)_hex
+  55:  sha256($pass.$salt)_hex
+  56:  sha256($salt.$pass)_hex
+  57:  sha512($pass.$salt)_hex
+  58:  sha512($salt.$pass)_hex
+  59:  mysql_pre41
+  60:  mysql5
+  61:  ntlm
+  62:  MSSQL2015
+  63:  bcrypt($pass)
+  64:  bcrypt(md5($pass))
+  65:  bcrypt($pass.$salt)
+  66:  scrypt($salt,$pass)
+```
 
 ### 其他选项
 
@@ -401,4 +474,4 @@ go vet ./...
 
 近期性能调整减少了多目标校验、字典策略准备、共享盐处理和任务派发的重复工作。基准中，SHA-256 的 1000 个目标 × 1000 个候选总体处理耗时由约 18.5 ms 降至 1.83 ms；8 个字典与 100000 个目标的场景由约 181.8 ms 降至 133.5 ms。端到端短命令受启动及 I/O 影响，个别小输入场景会有波动。
 
-详细测试说明见 [测试指南](docs/testing.md)，测量方法和逐项数据见 [性能优化验收报告](docs/performance-optimization-report.md)，变更摘要见 [变更记录](CHANGELOG.md)。
+详细测试说明见 [测试指南](docs/testing.md)，测量方法和逐项数据见 [性能优化验收报告](docs/performance-optimization-report.md)。
