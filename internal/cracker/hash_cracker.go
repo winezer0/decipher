@@ -131,8 +131,19 @@ func (e *Engine) prepareCrackStrategies(targets []HashSaltTarget, algos []algo.A
 		bindings[i] = crackAlgorithm{Algorithm: alg, recoverPrepared: recover, tokenLength: tokenLength}
 	}
 	var preparedTargets []algo.PreparedDigest
+	// Reuse temporary classification storage; published references live in
+	// bounded blocks so growing an arena never retains abandoned copies.
+	var scratch []*crackAlgorithm
+	if len(targets) >= 16 {
+		scratch = make([]*crackAlgorithm, 2*len(bindings))
+	}
+	var references []*crackAlgorithm
 	for index, target := range targets {
 		var fixed, dynamic []*crackAlgorithm
+		if scratch != nil {
+			fixed = scratch[:0:len(bindings)]
+			dynamic = scratch[len(bindings) : len(bindings) : 2*len(bindings)]
+		}
 		needsPrepared := false
 		var decoded algo.PreparedDigest
 		decodedAttempted := false
@@ -158,6 +169,22 @@ func (e *Engine) prepareCrackStrategies(targets []HashSaltTarget, algos []algo.A
 			} else {
 				dynamic = append(dynamic, alg)
 			}
+		}
+		if scratch != nil {
+			required := len(fixed) + len(dynamic)
+			if required > cap(references)-len(references) {
+				capacity := 256
+				if len(bindings) > 0 && len(targets)-index <= capacity/len(bindings) {
+					capacity = (len(targets) - index) * len(bindings)
+				}
+				references = make([]*crackAlgorithm, 0, max(required, capacity))
+			}
+			start := len(references)
+			references = append(references, fixed...)
+			fixed = references[start:len(references):len(references)]
+			start = len(references)
+			references = append(references, dynamic...)
+			dynamic = references[start:len(references):len(references)]
 		}
 		var prepared *algo.PreparedDigest
 		if needsPrepared {
