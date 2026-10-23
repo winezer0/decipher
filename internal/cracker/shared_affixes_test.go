@@ -7,6 +7,7 @@ import (
 	md5algo "decipher/internal/algo/md5"
 	"decipher/internal/algo/types"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -144,5 +145,47 @@ func TestAffixedSaltProducerInputs(t *testing.T) {
 		if n != count {
 			t.Fatal("missing dynamic tasks")
 		}
+	}
+}
+
+func TestPrepareSaltAffixesThresholds(t *testing.T) {
+	tests := []struct {
+		name      string
+		prefix    string
+		suffix    string
+		plains    int
+		salts     []string
+		enabled   bool
+		wantBatch bool
+	}{
+		{name: "disabled", prefix: "p:", plains: 20, salts: []string{"a"}, wantBatch: false},
+		{name: "below plaintext threshold", prefix: "p:", plains: 15, salts: []string{"a"}, enabled: true, wantBatch: false},
+		{name: "no affix", plains: 20, salts: []string{"a"}, enabled: true, wantBatch: false},
+		{name: "sparse salts", prefix: "p:", plains: 20, salts: []string{"", "", "", "", "a"}, enabled: true, wantBatch: false},
+		{name: "one quarter nonempty", suffix: ":s", plains: 16, salts: []string{"", "a", "", "b"}, enabled: true, wantBatch: true},
+		{name: "empty salts", prefix: "p:", plains: 20, salts: []string{"", ""}, enabled: true, wantBatch: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Engine{SaltPrefix: tt.prefix, SaltSuffix: tt.suffix}
+			original := append([]string(nil), tt.salts...)
+			got := e.prepareSaltAffixes(tt.salts, tt.plains, tt.enabled)
+			if (got != nil) != tt.wantBatch {
+				t.Fatalf("batch allocated=%t want %t", got != nil, tt.wantBatch)
+			}
+			if got != nil {
+				if len(got.values) != len(tt.salts) {
+					t.Fatalf("got %d affixed salts, want %d", len(got.values), len(tt.salts))
+				}
+				for i, salt := range tt.salts {
+					if want := tt.prefix + salt + tt.suffix; got.values[i] != want {
+						t.Errorf("salt %d = %q want %q", i, got.values[i], want)
+					}
+				}
+			}
+			if !reflect.DeepEqual(tt.salts, original) {
+				t.Fatal("input salts were modified")
+			}
+		})
 	}
 }

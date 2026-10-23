@@ -93,6 +93,41 @@ func TestGroupedPlainKeepsCustomRecover(t *testing.T) {
 	}
 }
 
+func TestGroupedPlainFallsBackForMixedAlgorithms(t *testing.T) {
+	plain := "first"
+	md5Hash := fmt.Sprintf("%x", md5.Sum([]byte(plain)))
+	sha256Hash := fmt.Sprintf("%x", sha256.Sum256([]byte(plain)))
+	targets := make([]HashSaltTarget, 16)
+	for i := range targets {
+		if i%2 == 0 {
+			targets[i].Hash = md5Hash
+		} else {
+			targets[i].Hash = sha256Hash
+		}
+	}
+	algorithms := []algo.Algorithm{&md5algo.MD5Algo{}, &sha.SHA256Algo{}}
+	strategies := (&Engine{}).prepareCrackStrategies(targets, algorithms)
+	if strategies.fixedPlainDigest != nil {
+		t.Fatal("mixed algorithms must use per-target verification")
+	}
+	got := groupedPlainResults(&Engine{}, strategies, len(targets))
+	if len(got) != len(targets) {
+		t.Fatalf("got %d results want %d", len(got), len(targets))
+	}
+	for i, result := range got {
+		if result.Hash != targets[i].Hash || result.Plaintext != plain {
+			t.Errorf("result %d = %+v; target order or plaintext changed", i, result)
+		}
+		wantAlgorithm := algorithms[0].Name()
+		if i%2 == 1 {
+			wantAlgorithm = algorithms[1].Name()
+		}
+		if result.Algorithm != wantAlgorithm {
+			t.Errorf("result %d algorithm = %q want %q", i, result.Algorithm, wantAlgorithm)
+		}
+	}
+}
+
 func TestGroupedPlainCancelsBlockedResult(t *testing.T) {
 	targets := make([]HashSaltTarget, 16)
 	for i := range targets {
