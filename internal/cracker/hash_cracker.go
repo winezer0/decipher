@@ -42,6 +42,8 @@ func (e *Engine) RunHashCrack(targets []HashSaltTarget, plainFiles []string, sec
 
 	// 开始进行解密
 	startTime := time.Now()
+	reuseStrategies := len(plainDictSources) > 1 && purePreparedAlgorithms(hashAlgos)
+	var prepared *crackStrategies
 	for _, source := range plainDictSources {
 		logging.Infof("RunHashCrack processing dictionary: %s", source.Name)
 
@@ -78,7 +80,16 @@ func (e *Engine) RunHashCrack(targets []HashSaltTarget, plainFiles []string, sec
 		}
 
 		// 使用新的流式 Salt 处理方法
-		crackerResults := e.runHashCrackWithDictStream(targets, hashAlgos, saltProviders, crackReader, startTime, bar)
+		var crackerResults []CrackerResult
+		if reuseStrategies {
+			if prepared == nil {
+				strategies := e.prepareCrackStrategies(targets, hashAlgos)
+				prepared = &strategies
+			}
+			crackerResults = e.runPreparedHashCrack(*prepared, saltProviders, crackReader, startTime, bar, e.SaltPrefix != "" || e.SaltSuffix != "")
+		} else {
+			crackerResults = e.runHashCrackWithDictStream(targets, hashAlgos, saltProviders, crackReader, startTime, bar)
+		}
 		for _, res := range crackerResults {
 			allResults = append(allResults, res)
 
@@ -243,6 +254,12 @@ func (e *Engine) prepareCrackStrategies(targets []HashSaltTarget, algos []algo.A
 }
 
 func (e *Engine) runHashCrackWithDictStream(hashSaltTargets []HashSaltTarget, algos []algo.Algorithm, saltProviders []SaltProvider, reader io.Reader, startTime time.Time, bar *progressbar.ProgressBar) []CrackerResult {
+	strategies := e.prepareCrackStrategies(hashSaltTargets, algos)
+	shareAffixes := (e.SaltPrefix != "" || e.SaltSuffix != "") && purePreparedAlgorithms(algos)
+	return e.runPreparedHashCrack(strategies, saltProviders, reader, startTime, bar, shareAffixes)
+}
+
+func (e *Engine) runPreparedHashCrack(strategies crackStrategies, saltProviders []SaltProvider, reader io.Reader, startTime time.Time, bar *progressbar.ProgressBar, shareAffixes bool) []CrackerResult {
 	var results []CrackerResult
 	var mu sync.Mutex
 
@@ -256,8 +273,6 @@ func (e *Engine) runHashCrackWithDictStream(hashSaltTargets []HashSaltTarget, al
 	resultChan := make(chan CrackerResult, e.workers*10)
 
 	var wg sync.WaitGroup
-
-	strategies := e.prepareCrackStrategies(hashSaltTargets, algos)
 
 	// 启动 Workers
 	for i := 0; i < e.workers; i++ {
@@ -274,7 +289,7 @@ func (e *Engine) runHashCrackWithDictStream(hashSaltTargets []HashSaltTarget, al
 	}()
 
 	// 生产者：读取明文 -> 读取 Salt 流 -> 生成任务
-	options := crackDispatchOptions{shareSaltAffixes: (e.SaltPrefix != "" || e.SaltSuffix != "") && purePreparedAlgorithms(algos), skipFixed: len(strategies.fixed) == 0, skipDynamic: len(strategies.dynamic) == 0}
+	options := crackDispatchOptions{shareSaltAffixes: shareAffixes, skipFixed: len(strategies.fixed) == 0, skipDynamic: len(strategies.dynamic) == 0}
 	go e.crackProducer(ctx, taskChan, reader, saltProviders, bar, startTime, options)
 
 	for res := range resultChan {
