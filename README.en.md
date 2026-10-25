@@ -17,6 +17,10 @@ A high-performance hash recovery tool written in Go. It identifies hash algorith
 
 Go programs can call the application through its in-process SDK. See the [Go SDK API documentation](sdk/README.md).
 
+## MCP server
+
+An independent HTTP MCP server exposes SDK operations as tools. See the [MCP server documentation](mcp/README.md).
+
 ## Commands
 
 | Command | Purpose |
